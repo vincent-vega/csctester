@@ -10,10 +10,6 @@ __user__    = [ 'Davide', 'Barelli' ]
 TODO List
 =========
 
-* single credential test
-    > error on second credential (authorize test) - PkBox issue???
-        # csc -u davide.barelli@intesigroup.com -p davide -e integrazione check [NAMIRIAL]_AUTO_BRLDVD84R17E801F:16 [NAMIRIAL]_AUTO_BRLDVD84R17E801F:16
-* exit value
 * quiet
 * log tests result to a file
 '''
@@ -856,7 +852,7 @@ class CSC(object):
                         '=':      _len_eq_callback,
                         '>':      _len_greater_callback
                     }[c['condition']]():
-                        self._print_KO_msg(cfg['service'], i + 1, t['input'], j, t['name'] if 'name' in t else None, self.error_level if 'err_level' not in t else t['err_level'])
+                        self._print_KO_msg(cfg['service'], i + 1, t['input'], j, t['name'] if 'name' in t else None, error_level=2 if 'err_level' not in t else t['err_level'])
                         print(CSC.highlight(' Expected result rules:', bold=True), CSC.highlight(json.dumps(check, indent=4, sort_keys=True), 'IndianRed1'), end='\n\n')
                         break
                 except Exception as e:
@@ -913,7 +909,8 @@ class CSC(object):
             print(f'{CSC.highlight("Login disabled. Using configured sessionkey:", bold=True)} {self.session_key}')
             return
         if self.credential_encoded is None:
-            raise RuntimeError('*** Encoded credentials unavailable ***')
+            self._set_error_level(1)
+            raise RuntimeError('*** Login credential unavailable ***')
         cfg = {
             'service': 'auth/login',
             'tests': [
@@ -1197,11 +1194,15 @@ class CSC(object):
                 pin = getpass.getpass(CSC.highlight('Please enter the PIN value [press ENTER to abort]: ', bold=True))
                 if pin == '':
                     raise RuntimeError('*** Unable to perform Authorize tests: PIN is empty ***')
+            elif self.quiet:
+                pin = self.DEFAULT_PIN
             else:
                 tmp = getpass.getpass(CSC.highlight('Confirm or change the default PIN [' + self.DEFAULT_PIN + ']: ', bold=True))
                 pin = tmp if tmp != '' else self.DEFAULT_PIN
 
         if auth_mode == 'explicit' and otp_presence:
+            if self.quiet:
+                raise RuntimeError('*** Unable to perform Authorize tests in quiet mode: OTP is required ***')
             otp = input(CSC.highlight('Please enter the OTP value [press ENTER to abort]: ', bold=True))
             if otp == '':
                 raise RuntimeError('*** Unable to perform Authorize tests: OTP is empty ***')
@@ -1720,7 +1721,7 @@ class CSC(object):
 
     def single_revoke(self, token):
         if token is None or token == '':
-            print(CSC('Cannot revoke empty token', 'yellow'))
+            print(CSC.highlight('Cannot revoke empty token', 'yellow'))
             return
         payload = {
             'token': token
@@ -1787,7 +1788,7 @@ class CSC(object):
         if self.SAD is not None and self.SAD != '':
             self.single_revoke(self.SAD)
         if self.session_key is not None and self.session_key != '':
-            do_revoke = input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
+            do_revoke = 'y' if self.quiet else input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
             while not re.match('[yYnN]', do_revoke):
                 if do_revoke == '':
                     do_revoke = 'y'
@@ -1798,7 +1799,7 @@ class CSC(object):
         sys.exit(1 if self.error_level < 1 else self.error_level)
 
     def _ask_and_revoke(self, session_key=None):
-        do_revoke = input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
+        do_revoke = 'y' if self.quiet else input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
         while not re.match('[yYnN]', do_revoke):
             if do_revoke == '':
                 do_revoke = 'y'
@@ -1835,19 +1836,19 @@ class CSC(object):
         if is_valid or self.test_invalid_credentials:
             abort_signature = False
             if auth_mode == 'implicit' or (auth_mode == 'explicit' and otp_presence and otp_type == 'online'):
-                r = ''
                 if not login_executed or __user__[1].lower() not in self.username:
+                    r = 'n' if self.quiet else ''
                     while r != 'y' and r != 'n':
                         r = input(CSC.highlight(f'WARNING! Username could not belong to {" ".join(__user__)}. Continue? [y/n] ', 'yellow', bold=True))
                     if r != 'y':
                         abort_signature = True
             if not abort_signature and auth_mode == 'implicit':
-                r = ''
+                r = 'n' if self.quiet else ''
                 while r != 'y' and r != 'n':
                     r = input(CSC.highlight('Implicit authorization, do you want to continue? [y/n] ', 'yellow', bold=True))
                 if r != 'y':
                     abort_signature = True
-            elif not abort_signature and auth_mode in [ 'explicit', 'oauth2code' ] and otp_presence and otp_type == 'online':
+            elif not self.quiet and not abort_signature and auth_mode in [ 'explicit', 'oauth2code' ] and otp_presence and otp_type == 'online':
                 self.send_otp(credential_id)
 
             if not abort_signature:
@@ -1858,6 +1859,9 @@ class CSC(object):
             print(CSC.highlight('*** SKIP: invalid credential ***', 'yellow'))
 
     def check_credential(self, cred_id, ask_revoke=False, login_executed=False):
+        self.info_test()
+        self.generic_errors()
+        login_executed = False
         if not self.session_key:
             self.session_key = self._get_session_key()
             if not self.session_key:
@@ -1870,7 +1874,7 @@ class CSC(object):
             print(CSC.highlight(e, 'yellow', bold=True))
 
         if ask_revoke:
-            do_revoke = input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
+            do_revoke = 'y' if self.quiet else input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
             while not re.match('[yYnN]', do_revoke):
                 if do_revoke == '':
                     do_revoke = 'y'
@@ -1906,7 +1910,7 @@ class CSC(object):
         else:
             print(CSC.highlight('*** No credentials found! ***', 'yellow'))
 
-        do_revoke = input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
+        do_revoke = 'y' if self.quiet else input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
         while not re.match('[yYnN]', do_revoke):
             if do_revoke == '':
                 do_revoke = 'y'
@@ -1966,13 +1970,13 @@ class CSC(object):
         for k, v in CSC.service_logo_URLs.items():
             s = CSC._check_logo(k, v)
             if 'KO' in s:
-                error_level = 1
+                error_level = 2
             print(s)
         print(CSC.highlight('\nChecking OAuth logos', bold=True))
         for k, v in CSC.oauth_logo_URLs.items():
             s = CSC._check_logo(k, v)
             if 'KO' in s:
-                error_level = 1
+                error_level = 2
             print(s)
         return error_level
 
@@ -1984,7 +1988,7 @@ class CSC(object):
         print(f'DEBUG - exit value {self.error_level}') # TODO remove
         return self.error_level
 
-    def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, verbose=True):
+    def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, verbose=True, quiet=False):
         #ctx = ssl.create_default_context()
         #ctx.check_hostname = False
         #ctx.verify_mode = ssl.CERT_NONE
@@ -2022,6 +2026,7 @@ class CSC(object):
         self.DEFAULT_PIN = pin
         self.SAD = None
         self.error_level = 0
+        self.quiet = quiet
 
         if verbose:
             print(CSC.getinfostr())
@@ -2053,7 +2058,7 @@ def validate_session(ctx, param, value):
         raise click.BadParameter(f'Cannot use session [{value}], missing environment value')
     return value
 
-def initialize_with_TUI():
+def initialize_with_TUI(quiet):
     m = CSCCursesMenu(CSCCursesMenu.DEFAULT_CREDENTIALS_FILE_NAME)
     try:
         data = m.display()
@@ -2072,14 +2077,14 @@ def initialize_with_TUI():
         print(CSC.highlight('An problem occurred while getting data from the TUI', 'red', bold=True))
         sys.exit(1)
 
-    return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'])
+    return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet)
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']), invoke_without_command=True)
 @click.option('--user',        '-u', metavar='<username>', help='Account username to be used')
 @click.option('--passw',       '-p', metavar='<password>', help='Account password to be used')
 @click.option('--environment', '-e', metavar='<env>', is_eager=True, type=click.Choice(CSC.env_URLs.keys()), help='Target environment')
 @click.option('--session',     '-s', metavar='<session-key>', callback=validate_session, help='A valid CSC access token')
-@click.option('--quiet',       '-q', is_flag=True, default=False, help='Non-interactive mode: every test requiring a user interaction will be skipped')
+@click.option('--quiet',       '-q', is_flag=True, default=False, help='Non-interactive mode: every test requiring a user interaction will be skipped. Only credential with PIN only will be checked, using the default one.')
 @click.option('--version',     '-V', is_flag=True, expose_value=False, callback=print_version, is_eager=True, help='Print version information and exit')
 @click.pass_context
 def main(ctx, quiet, user, passw, environment, session):
@@ -2099,16 +2104,17 @@ def main(ctx, quiet, user, passw, environment, session):
 
     if ctx.invoked_subcommand is None:
         if not environment or (not user or not passw) and not session:
-            csc = initialize_with_TUI()
+            csc = initialize_with_TUI(quiet)
         else:
-            csc = CSC(user, passw, env=environment, session_key=session)
+            csc = CSC(user, passw, env=environment, session_key=session, quiet=quiet)
         csc.global_test()
         sys.exit(csc.get_error_level())
 
     ctx.obj['environment'] = environment
-    ctx.obj['user'] = user
     ctx.obj['password'] = passw
+    ctx.obj['quiet'] = quiet
     ctx.obj['session'] = session
+    ctx.obj['user'] = user
 
 @main.command('list')
 def list_environments():
@@ -2127,9 +2133,9 @@ def logo():
 def scan(ctx):
     """Scan user credentials"""
     if not ctx.obj['environment'] or (not ctx.obj['user'] or not ctx.obj['password']) and not ctx.obj['session']:
-        csc = initialize_with_TUI()
+        csc = initialize_with_TUI(quiet=ctx.obj['quiet'])
     else:
-        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'])
+        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'])
     csc.scan()
     sys.exit(csc.get_error_level())
 
@@ -2138,9 +2144,9 @@ def scan(ctx):
 @click.pass_context
 def check(ctx, credential_id):
     if not ctx.obj['environment'] or (not ctx.obj['user'] or not ctx.obj['password']) and not ctx.obj['session']:
-        csc = initialize_with_TUI()
+        csc = initialize_with_TUI(quiet=ctx.obj['quiet'])
     else:
-        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'])
+        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'])
     if len(credential_id) > 0:
         for i in range(len(credential_id)):
             csc.check_credential(credential_id[i], ask_revoke=(i == len(credential_id) - 1), login_executed=(i > 0))
