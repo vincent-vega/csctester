@@ -1406,6 +1406,7 @@ class CSC(object):
             r.append({ 'condition': '=', 'arg': { 'signatures': 4 } })
             base_request = {
                 'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'err_level': 3,
                 'input': {
                     'SAD': sad,
                     'hash': [
@@ -1440,6 +1441,7 @@ class CSC(object):
             cfg['tests'].append({
                 'name': 'sha224 with signAlgo',
                 'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'err_level': 3,
                 'input': {
                     'SAD': sad,
                     'signAlgo': CSC.ALGO_SHA224_WITH_RSA_ENC,
@@ -1460,6 +1462,7 @@ class CSC(object):
             cfg['tests'].append({
                 'name': 'sha256 with signAlgo',
                 'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'err_level': 3,
                 'input': {
                     'SAD': sad,
                     'signAlgo': CSC.ALGO_SHA256_WITH_RSA_ENC,
@@ -1480,6 +1483,7 @@ class CSC(object):
             cfg['tests'].append({
                 'name': 'sha384 with signAlgo',
                 'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'err_level': 3,
                 'input': {
                     'SAD': sad,
                     'signAlgo': CSC.ALGO_SHA384_WITH_RSA_ENC,
@@ -1504,6 +1508,7 @@ class CSC(object):
             cfg['tests'].append({
                 'name': 'sha512 with signAlgo',
                 'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'err_level': 3,
                 'input': {
                     'SAD': sad,
                     'signAlgo': CSC.ALGO_SHA512_WITH_RSA_ENC,
@@ -1524,6 +1529,7 @@ class CSC(object):
             cfg['tests'].append({
                 'name': 'RSASSA-PSS with signAlgo',
                 'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'err_level': 3,
                 'input': {
                     'SAD': sad,
                     'signAlgoParams': 'MDmgDzANBglghkgBZQMEAgEFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgEFAKIDAgEgowMCAQE=',
@@ -1955,12 +1961,20 @@ class CSC(object):
 
     @staticmethod
     def check_logos():
+        error_level = 0
         print(CSC.highlight('Checking service logos', bold=True))
         for k, v in CSC.service_logo_URLs.items():
-            print(CSC._check_logo(k, v))
+            s = CSC._check_logo(k, v)
+            if 'KO' in s:
+                error_level = 1
+            print(s)
         print(CSC.highlight('\nChecking OAuth logos', bold=True))
         for k, v in CSC.oauth_logo_URLs.items():
-            print(CSC._check_logo(k, v))
+            s = CSC._check_logo(k, v)
+            if 'KO' in s:
+                error_level = 1
+            print(s)
+        return error_level
 
     def _set_error_level(self, value):
         if not self.error_level or self.error_level < value:
@@ -2106,8 +2120,7 @@ def list_environments():
 @main.command()
 def logo():
     """Check logo files and exit"""
-    CSC.check_logos()
-    sys.exit(0)
+    sys.exit(CSC.check_logos())
 
 @main.command()
 @click.pass_context
