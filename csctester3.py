@@ -10,20 +10,23 @@ __user__    = [ 'Davide', 'Barelli' ]
 TODO List
 =========
 
-* quiet
 * log tests result to a file
+  set logger after TUI execution
+* set default pin by regex
+
 '''
 
 import curses.textpad as textpad
 from collections import OrderedDict
 from operator import itemgetter
+from logging.handlers import TimedRotatingFileHandler
 import base64
 import click
 import copy
 import curses
 import getpass
 import json
-#import logging
+import logging
 import os
 #import pudb; pu.db
 import re
@@ -34,6 +37,34 @@ import signal
 import sys
 import tempfile
 import traceback
+
+class GlobalAttributes:
+    pass
+_priv_attr = GlobalAttributes()
+_priv_attr.colorize = True
+
+def get_logger(log_file_name=None):
+    global _priv_attr
+    logger = logging.getLogger(__name__)
+    if log_file_name:
+        handler = TimedRotatingFileHandler(log_file_name, when='midnight', interval=1, backupCount=15, encoding='utf-8')
+        handler.suffix = '%Y-%m-%d.log'
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        _priv_attr.colorize = False
+        logger.setLevel(logging.INFO)
+    else:
+        handler = logging.StreamHandler(sys.stdout)
+        #handler.setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    return logger
+
+def logger_style_artist(func):
+    def wrapper(*args, **kwargs):
+        global _priv_attr
+        # do not colorize output when logging to a file
+        return func(*args, **kwargs) if _priv_attr.colorize else args[0]
+    return wrapper
 
 class CSCCursesMenu(object):
 
@@ -66,8 +97,6 @@ class CSCCursesMenu(object):
         self.red_color        = curses.color_pair(5)
         self.cyan_color       = curses.color_pair(6)
         self.normal_color     = curses.A_NORMAL
-
-        #logging.basicConfig(filename='out.log', level=logging.DEBUG)
 
         self.menu = {
             'environment': {
@@ -105,7 +134,7 @@ class CSCCursesMenu(object):
 
     def _sig_handler(self, signal, frame):
         self.destroy()
-        print(CSC.highlight('CSC tester terminated', 'DeepPink1', bold=True))
+        print(CSC.highlight('CSC tester terminated', 'DeepPink1', bold=True), file=sys.stderr)
         sys.exit(1)
 
     def _prompt_selection(self, parent=None):
@@ -482,20 +511,20 @@ class CSCCursesMenu(object):
             try:
                 shutil.copy(self.config_file_path, tmp_backup_file)
             except Exception as e:
-                print('{} {}'.format(CSC.highlight('An error occurred while creating a backup file', 'red', bold=True), e))
+                print('{} {}'.format(CSC.highlight('An error occurred while creating a backup file', 'red', bold=True), e), file=sys.stderr)
                 return False
         try:
             open(self.config_file_path, 'w').close()
             with open(self.config_file_path, 'w') as f:
                 f.write(json.dumps(content, indent=4, sort_keys=True))
         except Exception as e:
-            print('{} {}'.format(CSC.highlight('An error occurred while updating your configuration file', 'yellow'), e))
+            print('{} {}'.format(CSC.highlight('An error occurred while updating your configuration file', 'yellow'), e), file=sys.stderr)
             if self.conf_file:
                 try:
-                    print(CSC.highlight('Restoring the old configuration', 'yellow'))
+                    print(CSC.highlight('Restoring the old configuration', 'yellow'), file=sys.stderr)
                     shutil.copy(tmp_backup_file, self.config_file_path)
                 except:
-                    print(CSC.highlight('Cannot restore configuration file, a backup file has been saved in path ' + tmp_backup_file, 'red', bold=True))
+                    print(CSC.highlight('Cannot restore configuration file, a backup file has been saved in path ' + tmp_backup_file, 'red', bold=True), file=sys.stderr)
                     return False
                 os.remove(tmp_backup_file)
             return False
@@ -759,7 +788,7 @@ class CSC(object):
                 try:
                     j = r.json()
                 except ValueError:
-                    print(f'[ {CSC.highlight("KO", "red", bold=True)} ] {cfg["service"]} {t["name"] if "name" in t else "test " + str(i + 1)}: cannot parse json response', end='\n\n')
+                    self.logger.error(f'[ {CSC.highlight("KO", "red", bold=True)} ] {cfg["service"]} {t["name"] if "name" in t else "test " + str(i + 1)}: cannot parse json response')
                     return [] #TODO should not return??
             check = t['exp_result']
 
@@ -853,13 +882,13 @@ class CSC(object):
                         '>':      _len_greater_callback
                     }[c['condition']]():
                         self._print_KO_msg(cfg['service'], i + 1, t['input'], j, t['name'] if 'name' in t else None, error_level=2 if 'err_level' not in t else t['err_level'])
-                        print(CSC.highlight(' Expected result rules:', bold=True), CSC.highlight(json.dumps(check, indent=4, sort_keys=True), 'IndianRed1'), end='\n\n')
+                        self.logger.error(f'{CSC.highlight(" Expected result rules:", bold=True)} {CSC.highlight(json.dumps(check, indent=4, sort_keys=True), "IndianRed1")}\n\n')
                         break
                 except Exception as e:
-                    print(f'{CSC.highlight("Invalid condition check: " + c["condition"], "yellow", bold=True)} - {type(e).__name__} {e}')
+                    self.logger.error(f'{CSC.highlight("Invalid condition check: " + c["condition"], "yellow", bold=True)} - {type(e).__name__} {e}')
                     traceback.print_exc()
             else:
-                CSC._print_OK_msg(cfg['service'], i + 1, t['name'] if 'name' in t else None)
+                self._print_OK_msg(cfg['service'], i + 1, t['name'] if 'name' in t else None)
 
             response.append(j)
         return response
@@ -867,20 +896,20 @@ class CSC(object):
     def info_test(self):
         r = requests.get(self.service_URLs['info'], verify=False)
         j = r.json()
-        print(json.dumps(j, indent=4, sort_keys=True), end='\n\n')
+        self.logger.info(f'{json.dumps(j, indent=4, sort_keys=True)}')
         if 'logo' in j:
             #check logo existence
             rr = requests.get(j['logo'], allow_redirects=False)
             if rr is None:
-                print(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("info response is empty", color="yellow")}')
+                self.logger.error(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("info response is empty", color="yellow")}')
             elif rr.status_code != 200:
-                print(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("status_code " + str(rr.status_code), color="yellow")}')
+                self.logger.error(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("status_code " + str(rr.status_code), color="yellow")}')
             elif rr.headers['Content-Type'] != 'image/png' and rr.headers['Content-Type'] != 'image/jpeg':
-                print(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("content type " + str(rr.headers["Content-Type"]), color="yellow")}')
+                self.logger.error(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("content type " + str(rr.headers["Content-Type"]), color="yellow")}')
             else:
-                print(f'[ {CSC.highlight("OK", color="green", bold=True)} ] Logo test')
+                self.logger.info(f'[ {CSC.highlight("OK", color="green", bold=True)} ] Logo test')
         else:
-            print(CSC.highlight('Logo URL not present', color='yellow', bold=True))
+            self.logger.error(CSC.highlight('Logo URL not present', color='yellow', bold=True))
         cfg = {
             'service': 'info',
             'tests': [
@@ -906,7 +935,7 @@ class CSC(object):
 
     def login_test(self):
         if self.session_key is not None:
-            print(f'{CSC.highlight("Login disabled. Using configured sessionkey:", bold=True)} {self.session_key}')
+            self.logger.info(f'{CSC.highlight("Login disabled. Using configured sessionkey:", bold=True)} {self.session_key}')
             return
         if self.credential_encoded is None:
             self._set_error_level(1)
@@ -994,9 +1023,9 @@ class CSC(object):
         self.credential_IDs = self.list_utility(64)
         if len(self.credential_IDs) > 1:
             if len(self.list_utility(len(self.credential_IDs)//5 + 1, 5)) is len(self.credential_IDs):
-                print(f'[ {CSC.highlight("OK", "green", bold=True)} ] credentials/list - pagination test')
+                self.logger.info(f'[ {CSC.highlight("OK", "green", bold=True)} ] credentials/list - pagination test')
             else:
-                print(f'[ {CSC.highlight("KO", "red", bold=True)} ] credentials/list - pagination test')
+                self.logger.error(f'[ {CSC.highlight("KO", "red", bold=True)} ] credentials/list - pagination test')
         return self.credential_IDs
 
     def list_utility(self, max_results=1, iterations=-1):
@@ -1005,16 +1034,16 @@ class CSC(object):
         credentials_ids = []
         payload = { 'maxResults': max_results }
         dots_num = 0
-        while iterations is not 0:
+        while iterations != 0:
             r = requests.post(self.service_URLs['credentials/list'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, json=payload)
             if r.text is not None and str(r.text) != '':
                 try:
                     j = r.json()
                 except ValueError:
-                    print(CSC.highlight('Invalid json response', 'red', bold=True))
+                    self.logger.error(CSC.highlight('Invalid json response while iterating credentials list', 'red', bold=True))
                     break
             else:
-                print(CSC.highlight('Invalid response', 'red', bold=True))
+                self.logger.error(CSC.highlight('Invalid response while iterating credentials list', 'red', bold=True))
                 break
             if 'error' in j:
                 break
@@ -1151,8 +1180,8 @@ class CSC(object):
             key_algo = j['key']['algo']
 
         if print_details:
-            print(f'{CSC.highlight("Credential ID", bold=True)} {CSC.highlight(credential_id, "SeaGreen2" if is_valid else "red", bold=True)}')
-            print(json.dumps(j, indent=4, sort_keys=True))
+            self.logger.debug(f'{CSC.highlight("Credential ID", bold=True)} {CSC.highlight(credential_id, "SeaGreen2" if is_valid else "red", bold=True)}')
+            self.logger.debug(json.dumps(j, indent=4, sort_keys=True))
 
         return is_valid, auth_mode, pin_presence, otp_presence, otp_type, key_algo
 
@@ -1179,14 +1208,14 @@ class CSC(object):
         r = self._generic_test(cfg)
         for rr in r:
             if 'error' not in rr:
-                print(CSC.highlight('* OTP for credential ' + credential_id + ' sent', 'DeepSkyBlue2'))
+                self.logger.debug(CSC.highlight(f'* OTP for credential {credential_id} sent', 'DeepSkyBlue2'))
                 break
 
     def authorize_test(self, credential_id=None, auth_mode='explicit', pin_presence=True, otp_presence=True, otp_type='online', num_signatures=20, is_valid=True):
         if self.session_key is None:
             raise RuntimeError('*** Session key unavailable ***')
         if auth_mode in [ 'oauth2code', 'oauth2token' ]:
-            print(CSC.highlight('Unable to perform authorizations test: invalid authMode {}'.format(auth_mode), 'yellow', bold=True))
+            self.logger.warn(CSC.highlight(f'Unable to perform authorizations test: invalid authMode {auth_mode}', 'yellow', bold=True))
             return
         pin = None
         if auth_mode == 'explicit' and pin_presence:
@@ -1316,13 +1345,14 @@ class CSC(object):
         try:
             r = self._generic_test(cfg)
         except KeyboardInterrupt:
-            print(CSC.highlight('Authorization tests interrupted...skipping to next credential', 'yellow'))
+            self.logger.warn(CSC.highlight('Authorization tests interrupted...skipping to next credential', 'yellow'))
             return None
         for i in range(len(cfg['tests']) - 1, -1, -1):
             if 'error' not in r[i] and 'SAD' in r[i]:
                 self.SAD = r[i]['SAD']
                 break
-        if self.SAD is None:
+        else:
+            self._set_error_level(3)
             raise RuntimeError('*** SAD unavailable ***')
         return self.SAD
 
@@ -1553,7 +1583,7 @@ class CSC(object):
         if len(cfg['tests']) > 0:
             self._generic_test(cfg)
         else:
-            print(CSC.highlight('Unsupported signature algorithms', 'yellow', bold=True))
+            self.logger.warn(CSC.highlight('Unsupported signature algorithms', 'yellow', bold=True))
 
     def timestamp_test(self):
         if self.session_key is None:
@@ -1612,7 +1642,7 @@ class CSC(object):
         payload = {
             'token': s
         }
-        print(CSC.highlight('Revoking token ' + s + ' ...', bold=True))
+        self.logger.info(CSC.highlight(f'Revoking token {s} ...', bold=True))
         requests.post(self.service_URLs['auth/revoke'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, json=payload)
         payload = {
             'hash': 'uB28DAYaAZ+74aWHm30uDgeVB18=',
@@ -1621,7 +1651,7 @@ class CSC(object):
         r = requests.post(self.service_URLs['signatures/timestamp'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, json=payload)
         j = r.json()
         if 'error' in j:
-            CSC._print_OK_msg('auth/revoke', 1)
+            self._print_OK_msg('auth/revoke', 1)
         else:
             self._print_KO_msg('Revoke', 1, payload, j)
         #REVOKE Test 2
@@ -1637,7 +1667,7 @@ class CSC(object):
                 payload = {
                     'token': refreshToken
                 }
-                print(CSC.highlight('Revoking token ' + refreshToken + ' ...', bold=True))
+                self.logger.info(CSC.highlight(f'Revoking token {refreshToken} ...', bold=True))
                 r = requests.post(self.service_URLs['auth/revoke'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionKey }, json=payload)
                 if r.text == '' or 'error' not in r.json():
                     payload = {
@@ -1646,17 +1676,16 @@ class CSC(object):
                     r = requests.post(self.service_URLs['auth/login'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Basic ' + self.credential_encoded }, json=payload)
                     j = r.json()
                     if 'error' in j:
-                        CSC._print_OK_msg('auth/revoke', 2)
+                        self._print_OK_msg('auth/revoke', 2)
                     else:
                         self._print_KO_msg('Revoke', 2, payload, j)
                 else:
                     self._set_error_level(2)
-                    #print(CSC.highlight(json.dumps(r.json(), indent=4, sort_keys=True), 'red'), CSC.highlight('*** Unable to perfom revoke test 2: revoke failed', 'red'), sep='\n', end='\n\n') # TODO check
-                    print(CSC.highlight(json.dumps(r.json(), indent=4, sort_keys=True), 'red'))
-                    print(CSC.highlight('*** Unable to perfom revoke test 2: revoke failed', 'red'), end='\n\n')
+                    self.logger.error(CSC.highlight(json.dumps(r.json(), indent=4, sort_keys=True), 'red'))
+                    self.logger.error(CSC.highlight('*** Unable to perfom revoke test 2: revoke failed', 'red'))
             else:
                 self._set_error_level(2)
-                print(CSC.highlight('*** Unable to perfom revoke test 2: login failed', 'red'))
+                self.logger.error(CSC.highlight('*** Unable to perfom revoke test 2: login failed', 'red'))
         #REVOKE Test 3
         if self.credential_encoded is not None:
             payload = {
@@ -1671,7 +1700,7 @@ class CSC(object):
                     'token': refreshToken,
                     'token_type_hint': 'refresh_token'
                 }
-                print(CSC.highlight('Revoking token ' + refreshToken + ' ...', bold=True))
+                self.logger.info(CSC.highlight(f'Revoking token {refreshToken} ...', bold=True))
                 r = requests.post(self.service_URLs['auth/revoke'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionKey }, json=payload)
                 if r.text == '' or 'error' not in r.json():
                     payload = {
@@ -1680,17 +1709,17 @@ class CSC(object):
                     r = requests.post(self.service_URLs['auth/login'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Basic ' + self.credential_encoded }, json=payload)
                     j = r.json()
                     if 'error' in j:
-                        CSC._print_OK_msg('auth/revoke', 3)
+                        self._print_OK_msg('auth/revoke', 3)
                     else:
                         self._print_KO_msg('Revoke', 3, payload, j)
                 else:
                     self._set_error_level(2)
                     j = r.json()
-                    print(CSC.highlight(json.dumps(j, indent=4, sort_keys=True), 'red'))
-                    print(CSC.highlight('*** Unable to perfom revoke test 3: revoke failed', 'red'), end='\n\n')
+                    self.logger.error(CSC.highlight(json.dumps(j, indent=4, sort_keys=True), 'red'))
+                    self.logger.error(CSC.highlight('*** Unable to perfom revoke test 3: revoke failed', 'red'))
             else:
                 self._set_error_level(2)
-                print(CSC.highlight('*** Unable to perfom revoke test 3: login failed', 'red'))
+                self.logger.error(CSC.highlight('*** Unable to perfom revoke test 3: login failed', 'red'))
         #REVOKE Test 4
         if self.credential_encoded is not None:
             r = requests.get(self.service_URLs['auth/login'], verify=False, headers={'Authorization': 'Basic ' + self.credential_encoded})
@@ -1701,50 +1730,50 @@ class CSC(object):
                     'token': sessionKey,
                     'token_type_hint': 'access_token'
                 }
-                print(CSC.highlight('Revoking token ' + sessionKey + ' ...', bold=True))
+                self.logger.info(CSC.highlight(f'Revoking token {sessionKey} ...', bold=True))
                 r = requests.post(self.service_URLs['auth/revoke'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionKey }, json=payload)
                 if r.text == '' or 'error' not in r.json():
                     r = requests.get(self.service_URLs['credentials/list'], verify=False, headers={'Authorization': 'Bearer ' + sessionKey})
                     j = r.json()
                     if 'error' in j:
-                        CSC._print_OK_msg('auth/revoke', 4)
+                        self._print_OK_msg('auth/revoke', 4)
                     else:
                         self._print_KO_msg('Revoke', 4, payload, j)
                 else:
                     self._set_error_level(2)
                     j = r.json()
-                    print(CSC.highlight(json.dumps(j, indent=4, sort_keys=True), 'red'))
-                    print(CSC.highlight('*** Unable to perfom revoke test 4: revoke failed', 'red'), end='\n\n')
+                    self.logger.error(CSC.highlight(json.dumps(j, indent=4, sort_keys=True), 'red'))
+                    self.logger.error(CSC.highlight('*** Unable to perfom revoke test 4: revoke failed', 'red'))
             else:
                 self._set_error_level(2)
-                print(CSC.highlight('*** Unable to perfom revoke test 4: login failed', 'red'))
+                self.logger.error(CSC.highlight('*** Unable to perfom revoke test 4: login failed', 'red'))
 
     def single_revoke(self, token):
         if token is None or token == '':
-            print(CSC.highlight('Cannot revoke empty token', 'yellow'))
+            self.logger.info(CSC.highlight('Cannot revoke empty token', 'yellow'))
             return
         payload = {
             'token': token
         }
-        print(CSC.highlight('Revoking token ' + token + ' ...', bold=True))
+        self.logger.info(CSC.highlight(f'Revoking token {token} ...', bold=True))
         r = requests.post(self.service_URLs['auth/revoke'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, json=payload)
         if r.text != '' and 'error' in r.json():
             self._set_error_level(2)
             j = r.json()
-            print(CSC.highlight('\n<=', bold=True), CSC.highlight(json.dumps(j, indent=4, sort_keys=True), 'red')) # TODO fancy output
-            print(CSC.highlight('*** Unable to revoke sessionKey ' + token + ' ***\n', 'red', bold=True), end='\n\n')
+            self.logger.error('{}  {}'.format(CSC.highlight(' \u2190', bold=True), CSC.highlight(json.dumps(j, indent=4, sort_keys=True), 'red')))
+            self.logger.error(CSC.highlight(f'*** Unable to revoke sessionKey {token} ***', 'red', bold=True))
 
-    @staticmethod
-    def _print_OK_msg(service, testNum, test_name=None):
-        print(f'[ {CSC.highlight("OK", "green", bold=True)} ] {service} {"test " + str(testNum) if test_name is None else "- " + test_name}')
+    def _print_OK_msg(self, service, testNum, test_name=None):
+        self.logger.info(f'[ {CSC.highlight("OK", "green", bold=True)} ] {service} {"test " + str(testNum) if test_name is None else "- " + test_name}')
 
     def _print_KO_msg(self, service, testNum, request, response, test_name=None, error_level=2):
         self._set_error_level(error_level)
-        print(f'[ {CSC.highlight("KO", "red", bold=True)} ] {service} {"test " + str(testNum) if test_name is None else "- " + test_name}', end='\n\n')
-        print(CSC.highlight(u' \u2192 ', bold=True), CSC.highlight(json.dumps(request, indent=4, sort_keys=True), 'IndianRed1'), end='\n\n')
-        print(CSC.highlight(u' \u2190 ', bold=True), CSC.highlight(json.dumps(response, indent=4, sort_keys=True), 'IndianRed1'), end='\n\n')
+        self.logger.error(f'[ {CSC.highlight("KO", "red", bold=True)} ] {service} {"test " + str(testNum) if test_name is None else "- " + test_name}')
+        self.logger.error('{} {}'.format(CSC.highlight(u' \u2192 ', bold=True), CSC.highlight(json.dumps(request, indent=4, sort_keys=True), 'IndianRed1')))
+        self.logger.error('{} {}'.format(CSC.highlight(u' \u2190 ', bold=True), CSC.highlight(json.dumps(response, indent=4, sort_keys=True), 'IndianRed1')))
 
     @staticmethod
+    @logger_style_artist
     def highlight(msg, color='white', bold=False, underline=False):
         if not sys.stdout.isatty():
             return msg
@@ -1784,7 +1813,7 @@ class CSC(object):
             2:  'SIGINT',
             15: 'SIGTERM'
         }[signal]
-        print(CSC.highlight('\n*** ' + signame + ' detected ***', 'yellow', bold=True))
+        print(CSC.highlight('\n*** ' + signame + ' detected ***', 'yellow', bold=True), file=sys.stderr)
         if self.SAD is not None and self.SAD != '':
             self.single_revoke(self.SAD)
         if self.session_key is not None and self.session_key != '':
@@ -1814,23 +1843,22 @@ class CSC(object):
             try:
                 j = r.json()
             except ValueError:
-                print(CSC.highlight('Invalid json response', 'red', bold=True))
+                self.logger.error(CSC.highlight('Invalid login json response', 'red', bold=True))
                 self._set_error_level(1)
                 return
         else:
-            print(CSC.highlight('Invalid response', 'red', bold=True))
+            self.logger.error(CSC.highlight('Invalid login response', 'red', bold=True))
             self._set_error_level(1)
             return
 
         if 'error' in j or 'access_token' not in j:
-            print(CSC.highlight('An error occurred during login', 'red', bold=True))
-            print(CSC.highlight(json.dumps(r.json(), indent=4, sort_keys=True), 'red'))
+            self.logger.error(CSC.highlight('An error occurred during login', 'red', bold=True))
+            self.logger.error(CSC.highlight(json.dumps(r.json(), indent=4, sort_keys=True), 'red'))
             self._set_error_level(1)
             return
         return j['access_token']
 
     def _credential_test_core(self, credential_id, login_executed=False):
-        print(CSC.highlight('Testing', bold=True), end=' ')
         is_valid, auth_mode, pin_presence, otp_presence, otp_type, key_algo = self.get_credential_info(credential_id=credential_id, print_details=True)
         self.credentials_info_test(credential_id, auth_mode)
         if is_valid or self.test_invalid_credentials:
@@ -1856,7 +1884,7 @@ class CSC(object):
                 self.extend_test(self.SAD, credential_id)
                 self.sign_hash_test(self.SAD, credential_id, key_algo)
         else:
-            print(CSC.highlight('*** SKIP: invalid credential ***', 'yellow'))
+            self.logger.info(CSC.highlight('*** SKIP: invalid credential ***', 'yellow'))
 
     def check_credential(self, cred_id, ask_revoke=False, login_executed=False):
         self.info_test()
@@ -1866,12 +1894,12 @@ class CSC(object):
             self.session_key = self._get_session_key()
             if not self.session_key:
                 return
-            print(CSC.highlight('Using session key ' + self.session_key, 'yellow'))
+            self.logger.info(CSC.highlight('Using session key ' + self.session_key, 'yellow'))
             login_executed = True
         try:
             self._credential_test_core(cred_id, login_executed)
         except RuntimeError as e:
-            print(CSC.highlight(e, 'yellow', bold=True))
+            self.logger.error(CSC.highlight(e, 'yellow', bold=True))
 
         if ask_revoke:
             do_revoke = 'y' if self.quiet else input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
@@ -1892,23 +1920,23 @@ class CSC(object):
             try:
                 self.login_test()
             except RuntimeError as e:
-                print(CSC.highlight(e, 'red', bold=True))
+                self.logger.error(CSC.highlight(e, 'red', bold=True))
                 sys.exit(self.error_level)
-        print(CSC.highlight('Using session key ' + self.session_key, 'yellow'))
+        self.logger.info(CSC.highlight('Using session key ' + self.session_key, 'yellow'))
         self.timestamp_test()
         self.list_test()
-        print(CSC.highlight(f'{str(len(self.credential_IDs))} credential{"" if len(self.credential_IDs) == 1 else "s"} found', bold=True))
-        print(CSC.highlight('Credentials IDs:', bold=True), CSC.highlight(json.dumps(self.credential_IDs, indent=4, sort_keys=True), 'DeepSkyBlue2'))
         if self.test_credentials and len(self.credential_IDs) > 0:
+            self.logger.info(CSC.highlight(f'{str(len(self.credential_IDs))} credential{"" if len(self.credential_IDs) == 1 else "s"} found', bold=True))
+            self.logger.info(f'{CSC.highlight("Credentials IDs:", bold=True)} {CSC.highlight(json.dumps(self.credential_IDs, indent=4, sort_keys=True), "DeepSkyBlue2")}')
             for c in self.credential_IDs:
                 try:
                     self._credential_test_core(c, login_executed)
                 except RuntimeError as e:
-                    print(CSC.highlight(e, 'yellow', bold=True))
+                    self.logger.error(CSC.highlight(e, 'yellow', bold=True))
         elif not self.test_credentials:
-            print(CSC.highlight('*** SKIPPING CREDENTIALS TESTS ***', 'yellow'))
+            self.logger.warn(CSC.highlight('*** SKIPPING CREDENTIALS TESTS ***', 'yellow'))
         else:
-            print(CSC.highlight('*** No credentials found! ***', 'yellow'))
+            self.logger.warn(CSC.highlight('*** No credentials found! ***', 'yellow'))
 
         do_revoke = 'y' if self.quiet else input(CSC.highlight('Revoke session key? [Y/n] ', bold=True))
         while not re.match('[yYnN]', do_revoke):
@@ -1925,18 +1953,18 @@ class CSC(object):
             if not self.session_key:
                 return
 
-        print(CSC.highlight(f'Using session key {self.session_key}', 'yellow'))
+        self.logger.info(CSC.highlight(f'Using session key {self.session_key}', 'yellow'))
         credentials_ids = self.list_utility(64)
         if len(credentials_ids) > 0:
-            print(CSC.highlight(f'{str(len(credentials_ids))} credential{"" if len(credentials_ids) == 1 else "s"} found', bold=True))
-            print(CSC.highlight('Credentials IDs:', bold=True), CSC.highlight(json.dumps(credentials_ids, indent=4, sort_keys=True), 'DeepSkyBlue2'))
+            self.logger.info(CSC.highlight(f'{str(len(credentials_ids))} credential{"" if len(credentials_ids) == 1 else "s"} found', bold=True))
+            self.logger.info(f'{CSC.highlight("Credentials IDs:", bold=True)} {CSC.highlight(json.dumps(credentials_ids, indent=4, sort_keys=True), "DeepSkyBlue2")}')
             for c in credentials_ids:
                 try:
                     self.get_credential_info(credential_id=c, print_details=True, certificates='single')
                 except RuntimeError as e:
-                    print(CSC.highlight('An error occurred while getting info for credential ' + c + ' - ' + str(e), 'red', bold=True))
+                    self.logger.error(CSC.highlight(f'An error occurred while getting info for credential {c} - {str(e)}', 'red', bold=True))
         else:
-            print(CSC.highlight('No credential found', 'red', bold=True))
+            self.logger.warn(CSC.highlight('No credential found', 'red', bold=True))
         self._ask_and_revoke()
 
     @staticmethod
@@ -1964,20 +1992,26 @@ class CSC(object):
             return f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test {CSC.highlight(env_name, color="DeepSkyBlue2")} failed for URL [ {url} ]: {CSC.highlight("an exception has been thrown", color="yellow")}\n{e}'
 
     @staticmethod
-    def check_logos():
+    def check_logos(logger=None):
+        err_func = logger.error if logger else print
+        info_func = logger.info if logger else print
         error_level = 0
-        print(CSC.highlight('Checking service logos', bold=True))
+        info_func(CSC.highlight('Checking service logos', bold=True))
         for k, v in CSC.service_logo_URLs.items():
             s = CSC._check_logo(k, v)
             if 'KO' in s:
                 error_level = 2
-            print(s)
-        print(CSC.highlight('\nChecking OAuth logos', bold=True))
+                err_func(s)
+            else:
+                info_func(s)
+        info_func(CSC.highlight('\nChecking OAuth logos', bold=True))
         for k, v in CSC.oauth_logo_URLs.items():
             s = CSC._check_logo(k, v)
             if 'KO' in s:
                 error_level = 2
-            print(s)
+                err_func(s)
+            else:
+                info_func(s)
         return error_level
 
     def _set_error_level(self, value):
@@ -1985,13 +2019,16 @@ class CSC(object):
             self.error_level = value
 
     def get_error_level(self):
-        print(f'DEBUG - exit value {self.error_level}') # TODO remove
+        self.logger.info(f'DEBUG - exit value {self.error_level}') # TODO remove
         return self.error_level
 
-    def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, verbose=True, quiet=False):
+    def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, quiet=False, logger=None):
         #ctx = ssl.create_default_context()
         #ctx.check_hostname = False
         #ctx.verify_mode = ssl.CERT_NONE
+
+        self.logger = logger if logger else get_logger()
+
         if not env and not context:
             raise RuntimeError('Missing CSC environment or context')
         if not context and env not in CSC.env_URLs:
@@ -2028,14 +2065,13 @@ class CSC(object):
         self.error_level = 0
         self.quiet = quiet
 
-        if verbose:
-            print(CSC.getinfostr())
-            print(CSC.highlight('Using endpoint:', bold=True), CSC.highlight(context, underline=True))
-            if self.username is not None:
-                print(CSC.highlight('Using account:', bold=True), CSC.highlight(self.username, 'DeepSkyBlue2'))
-            if self.credential_encoded is not None:
-                print(CSC.highlight('Using authorization header:', bold=True), self.credential_encoded)
-            print('\n###\n')
+        self.logger.debug(CSC.getinfostr())
+        self.logger.info(f'{CSC.highlight("Using endpoint:", bold=True)} {CSC.highlight(context, underline=True)}')
+        if self.username is not None:
+            self.logger.info(f'{CSC.highlight("Using account:", bold=True)} {CSC.highlight(self.username, "DeepSkyBlue2")}')
+        if self.credential_encoded is not None:
+            self.logger.debug(f'{CSC.highlight("Using authorization header:", bold=True)} {self.credential_encoded}')
+        self.logger.debug('\n###\n')
 
         signal.signal(signal.SIGINT,  self._sig_handler)
         signal.signal(signal.SIGTERM, self._sig_handler)
@@ -2044,8 +2080,8 @@ class CSC(object):
             try:
                 requests.packages.urllib3.disable_warnings()
             except:
-                print(CSC.highlight('Unable to disable urlib3 warnings', 'yellow'))
-                print(CSC.highlight('Update \'requests` module or execute `export PYTHONWARNINGS="ignore:Unverified HTTPS request"` to suppress HTTPS warnings', 'yellow'))
+                self.logger.info(CSC.highlight('Unable to disable urlib3 warnings', 'yellow'))
+                self.logger.info(CSC.highlight('Update \'requests` module or execute `export PYTHONWARNINGS="ignore:Unverified HTTPS request"` to suppress HTTPS warnings', 'yellow'))
 
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
@@ -2058,13 +2094,13 @@ def validate_session(ctx, param, value):
         raise click.BadParameter(f'Cannot use session [{value}], missing environment value')
     return value
 
-def initialize_with_TUI(quiet):
+def initialize_with_TUI(quiet, logger):
     m = CSCCursesMenu(CSCCursesMenu.DEFAULT_CREDENTIALS_FILE_NAME)
     try:
         data = m.display()
     except curses.error:
         m.destroy()
-        print(CSC.highlight('An error occurred: please increase window size', 'red', bold=True))
+        logger.error(CSC.highlight('An error occurred: please increase window size', 'red', bold=True))
         sys.exit(1)
     except Exception as e:
         m.destroy()
@@ -2074,23 +2110,27 @@ def initialize_with_TUI(quiet):
         if not curses.isendwin():
             m.destroy()
     if not data:
-        print(CSC.highlight('An problem occurred while getting data from the TUI', 'red', bold=True))
+        logger.error(CSC.highlight('An problem occurred while getting data from the TUI', 'red', bold=True))
         sys.exit(1)
 
-    return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet)
+    return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet, logger=logger)
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']), invoke_without_command=True)
-@click.option('--user',        '-u', metavar='<username>', help='Account username to be used')
-@click.option('--passw',       '-p', metavar='<password>', help='Account password to be used')
-@click.option('--environment', '-e', metavar='<env>', is_eager=True, type=click.Choice(CSC.env_URLs.keys()), help='Target environment')
-@click.option('--session',     '-s', metavar='<session-key>', callback=validate_session, help='A valid CSC access token')
-@click.option('--quiet',       '-q', is_flag=True, default=False, help='Non-interactive mode: every test requiring a user interaction will be skipped. Only credential with PIN only will be checked, using the default one.')
-@click.option('--version',     '-V', is_flag=True, expose_value=False, callback=print_version, is_eager=True, help='Print version information and exit')
+@click.option('--user',        '-u', metavar='<username>', help='Account username to be used.')
+@click.option('--passw',       '-p', metavar='<password>', help='Account password to be used.')
+@click.option('--environment', '-e', metavar='<env>', is_eager=True, type=click.Choice(CSC.env_URLs.keys()), help='Target environment. Use the list command to view the supported environments.')
+@click.option('--session',     '-s', metavar='<session-key>', callback=validate_session, help='A valid CSC access token. If provided, no authentication using username/password will be performed.')
+@click.option('--quiet',       '-q', is_flag=True, default=False, help='Non-interactive mode: every test requiring a user interaction will be skipped. Only automatic credentials (PIN only) will be checked using the default PIN. WARNING the default PIN is 12345678.')
+@click.option('--log',         '-l', type=click.Path(exists=False, resolve_path=True), metavar='<path-to-log-file>', help='Log file path. If present, the output will be written to this file. If not, no log file will be created and STDOUT will be used.')
+@click.option('--version',     '-V', is_flag=True, expose_value=False, callback=print_version, is_eager=True, help='Print version information and exit.')
 @click.pass_context
-def main(ctx, quiet, user, passw, environment, session):
+def main(ctx, quiet, user, passw, environment, session, log):
 
     """
-    CSC test script
+    Utility script for Cloud Signature Consortium (CSC) API testing.
+
+    \b
+    If username/password, session or environment are not provided, a text user interface (TUI) will be shown.
 
     \b
     Returned values:
@@ -2101,16 +2141,19 @@ def main(ctx, quiet, user, passw, environment, session):
     """
 
     ctx.ensure_object(dict)
+    logger = get_logger(log)
 
+    # default command = `check'
     if ctx.invoked_subcommand is None:
         if not environment or (not user or not passw) and not session:
-            csc = initialize_with_TUI(quiet)
+            csc = initialize_with_TUI(quiet, logger)
         else:
-            csc = CSC(user, passw, env=environment, session_key=session, quiet=quiet)
+            csc = CSC(user, passw, env=environment, session_key=session, quiet=quiet, logger=logger)
         csc.global_test()
         sys.exit(csc.get_error_level())
 
     ctx.obj['environment'] = environment
+    ctx.obj['logger'] = logger
     ctx.obj['password'] = passw
     ctx.obj['quiet'] = quiet
     ctx.obj['session'] = session
@@ -2124,29 +2167,29 @@ def list_environments():
     sys.exit(0)
 
 @main.command()
-def logo():
+@click.pass_context
+def logo(ctx):
     """Check logo files and exit"""
-    sys.exit(CSC.check_logos())
+    sys.exit(CSC.check_logos(ctx.obj['logger']))
 
-@main.command()
+@main.command(short_help='Scan the user credentials: no signature test will be performed, only the credential details will be shown.')
 @click.pass_context
 def scan(ctx):
-    """Scan user credentials"""
     if not ctx.obj['environment'] or (not ctx.obj['user'] or not ctx.obj['password']) and not ctx.obj['session']:
-        csc = initialize_with_TUI(quiet=ctx.obj['quiet'])
+        csc = initialize_with_TUI(quiet=ctx.obj['quiet'], logger=ctx.obj['logger'])
     else:
-        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'])
+        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'], logger=ctx.obj['logger'])
     csc.scan()
     sys.exit(csc.get_error_level())
 
-@main.command(short_help="Check credentials provided: if no credential id(s) are provided then check all")
+@main.command(short_help='Check credential ID(s) provided: if no credential ID is provided then check every credential found in the account')
 @click.argument('credential_id', nargs=-1)
 @click.pass_context
 def check(ctx, credential_id):
     if not ctx.obj['environment'] or (not ctx.obj['user'] or not ctx.obj['password']) and not ctx.obj['session']:
-        csc = initialize_with_TUI(quiet=ctx.obj['quiet'])
+        csc = initialize_with_TUI(quiet=ctx.obj['quiet'], logger=ctx.obj['logger'])
     else:
-        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'])
+        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'], logger=ctx.obj['logger'])
     if len(credential_id) > 0:
         for i in range(len(credential_id)):
             csc.check_credential(credential_id[i], ask_revoke=(i == len(credential_id) - 1), login_executed=(i > 0))
