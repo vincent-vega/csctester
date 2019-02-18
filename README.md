@@ -1,6 +1,7 @@
-csctester
-=========
 ![alt text](https://cloudsignatureconsortium.org/wp-content/uploads/2018/09/logo_light.png "Cloud Signature Consortium")
+
+CSC Tester
+==========
 
 Utility script for [Cloud Signature Consortium](https://cloudsignatureconsortium.org) API testing.
 
