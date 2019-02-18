@@ -1166,7 +1166,8 @@ class CSC(object):
         r = requests.post(self.service_URLs['credentials/info'], headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, verify=False, json=payload)
         j = r.json()
         if 'error' in j:
-            raise RuntimeError('*** Unable to get credential info' + '' if 'error_description' not in j else (': ' + j['error_description']) + ' ***')
+            self._set_error_level(1 if 'Session is invalid' else 3)
+            raise RuntimeError(f'*** Unable to get credential info {"" if "error_description" not in j else (": " + j["error_description"])} ***')
         is_valid = otp_presence = pin_presence = False
         otp_type = auth_mode = None
         pin_presence = 'PIN' in j and 'presence' in j['PIN'] and j['PIN']['presence'] == 'true'
@@ -1402,6 +1403,9 @@ class CSC(object):
             if 'error' not in r[i] and 'SAD' in r[i]:
                 self.SAD = r[i]['SAD']
                 break
+        else:
+            self._set_error_level(3)
+            raise RuntimeError('*** Cannot extend SAD validity ***')
         return self.SAD
 
     def sign_hash_test(self, sad=None, credential_id=None, key_algo=None):
@@ -2142,6 +2146,8 @@ def main(ctx, quiet, user, passw, environment, session, log):
      1 \u2192  Error: the script couldn't run properly (e.g. invalid login credentials)
      2 \u2192  Error: one or more minor checks failed (e.g. wrong error messages)
      3 \u2192  Critical error: core signature functionalities are compromised
+
+    ARGS: with `check' command, the credential ID(s) to be tested. If no credential ID is provided then check every credential found in the account and perform other non credential-related checks
     """
 
     ctx.ensure_object(dict)
@@ -2186,7 +2192,7 @@ def scan(ctx):
     csc.scan()
     sys.exit(csc.get_error_level())
 
-@main.command(short_help='Check credential ID(s) provided: if no credential ID is provided then check every credential found in the account')
+@main.command(short_help='Check credential ID(s) provided: if no credential ID is provided then check every credential found in the account and perform other non credential-related checks')
 @click.argument('credential_id', nargs=-1)
 @click.pass_context
 def check(ctx, credential_id):
