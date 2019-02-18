@@ -10,7 +10,7 @@ __user__    = [ 'Davide', 'Barelli' ]
 TODO List
 =========
 
-* set default pin by regex
+* set default PIN by regex
 
 BUGS
 * exit with value 1 if no signature has been performed with check command (even without errors, e.g. invalid credentials)
