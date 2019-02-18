@@ -10,9 +10,11 @@ __user__    = [ 'Davide', 'Barelli' ]
 TODO List
 =========
 
-* log tests result to a file
-  set logger after TUI execution
 * set default pin by regex
+
+BUGS
+* exit with value 1 if no signature has been performed with check command (even without errors, e.g. invalid credentials)
+* check credentials with invalid session: exit value 0
 
 '''
 
@@ -1022,7 +1024,8 @@ class CSC(object):
         r = self._generic_test(cfg)
         self.credential_IDs = self.list_utility(64)
         if len(self.credential_IDs) > 1:
-            if len(self.list_utility(len(self.credential_IDs)//5 + 1, 5)) is len(self.credential_IDs):
+            chunk_size = len(self.credential_IDs)//5 + 1
+            if len(self.list_utility(chunk_size, 5)) == len(self.credential_IDs):
                 self.logger.info(f'[ {CSC.highlight("OK", "green", bold=True)} ] credentials/list - pagination test')
             else:
                 self.logger.error(f'[ {CSC.highlight("KO", "red", bold=True)} ] credentials/list - pagination test')
@@ -1352,7 +1355,8 @@ class CSC(object):
                 self.SAD = r[i]['SAD']
                 break
         else:
-            self._set_error_level(3)
+            if is_valid:
+                self._set_error_level(3)
             raise RuntimeError('*** SAD unavailable ***')
         return self.SAD
 
@@ -1887,8 +1891,8 @@ class CSC(object):
             self.logger.info(CSC.highlight('*** SKIP: invalid credential ***', 'yellow'))
 
     def check_credential(self, cred_id, ask_revoke=False, login_executed=False):
-        self.info_test()
-        self.generic_errors()
+        r = requests.get(self.service_URLs['info'], verify=False)
+        self.logger.info(f'{json.dumps(r.json(), indent=4, sort_keys=True)}')
         login_executed = False
         if not self.session_key:
             self.session_key = self._get_session_key()
