@@ -1,4 +1,8 @@
-# csctester
+csctester
+=========
+![alt text](https://cloudsignatureconsortium.org/wp-content/uploads/2018/09/logo_light.png "Cloud Signature Consortium")
+
+Utility script for [Cloud Signature Consortium](https://cloudsignatureconsortium.org) API testing.
 
 ```
 Usage: csctester3.py [OPTIONS] COMMAND [ARGS]...
@@ -12,6 +16,10 @@ Usage: csctester3.py [OPTIONS] COMMAND [ARGS]...
    1 →  Error: the script couldn't run properly (e.g. invalid login credentials)
    2 →  Error: one or more minor checks failed (e.g. wrong error messages)
    3 →  Critical error: core signature functionalities are compromised
+
+  ARGS: with `check' command, the credential ID(s) to be tested. If no
+  credential ID is provided then check every credential found in the account
+  and perform other non credential-related checks
 
 Options:
   -u, --user <username>         Account username to be used.
@@ -34,7 +42,8 @@ Options:
 
 Commands:
   check  Check credential ID(s) provided: if no credential ID is provided then
-         check every credential found in the account
+         check every credential found in the account and perform other non
+         credential-related checks
   list   List the available environments and exit
   logo   Check logo files and exit
   scan   Scan the user credentials: no signature test will be performed, only
