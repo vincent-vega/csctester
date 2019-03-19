@@ -11,10 +11,11 @@ TODO List
 =========
 
 * set default PIN by regex
+* send OTP only when requested
 
 BUGS
 * exit with value 1 if no signature has been performed with check command (even without errors, e.g. invalid credentials)
-* check credentials with invalid session: exit value 0
+* show message for quitting TUI
 
 '''
 
@@ -597,6 +598,7 @@ class CSC(object):
         'integrazione78',
         'integrazione79',
         'collaudo',
+        'collaudo87',
         'produzione',
         'disaster recovery',
         'transsped (produzione)'
@@ -609,6 +611,7 @@ class CSC(object):
             'integrazione78': 'http://192.168.0.78:8080/Time4UserServices/csc/v0',
             'integrazione79': 'http://192.168.0.79:8080/Time4UserServices/csc/v0',
             'collaudo': 'https://services.test4mind.com/csc/v0',
+            'collaudo87': 'http://192.168.0.87:8080/Time4UserServices/csc/v0',
             'produzione': 'https://services.time4mind.com/csc/v0',
             'disaster recovery': 'https://services-dr.time4mind.com/csc/v0'
         }),
@@ -617,6 +620,7 @@ class CSC(object):
             'integrazione78': 'http://192.168.0.78:8080/Time4UserServices/csc/bankidno/v0',
             'integrazione79': 'http://192.168.0.79:8080/Time4UserServices/csc/bankidno/v0',
             'collaudo': 'https://bankidno.test4mind.com/csc/v0',
+            'collaudo87': 'http://192.168.0.87:8080/Time4UserServices/csc/bankidno/v0',
             'produzione': 'https://bnkidno.time4mind.com/csc/v0',
             'disaster recovery': 'https://bnkidno-dr.time4mind.com/csc/v0'
         }),
@@ -626,6 +630,7 @@ class CSC(object):
             'integrazione78': 'http://192.168.0.78:8080/Time4UserServices/csc/bankid/v0',
             'integrazione79': 'http://192.168.0.79:8080/Time4UserServices/csc/bankid/v0',
             'collaudo': 'https://bankid.test4mind.com/csc/v0',
+            'collaudo87': 'http://192.168.0.87:8080/Time4UserServices/csc/bankid/v0',
             'produzione': 'https://bnkid.time4mind.com/csc/v0',
             'disaster recovery': 'https://bnkid-dr.time4mind.com/csc/v0'
         }),
@@ -634,6 +639,7 @@ class CSC(object):
             'integrazione78': 'http://192.168.0.78:8080/Time4UserServices/csc/ftn/v0',
             'integrazione79': 'http://192.168.0.79:8080/Time4UserServices/csc/ftn/v0',
             'collaudo': 'https://ftn.test4mind.com/csc/v0',
+            'collaudo87': 'http://192.168.0.87:8080/Time4UserServices/csc/ftn/v0',
             'produzione': 'https://ftn.time4mind.com/csc/v0',
             'disaster recovery': 'https://ftn-dr.time4mind.com/csc/v0'
         }),
@@ -642,6 +648,7 @@ class CSC(object):
             'integrazione78': 'http://192.168.0.78:8080/Time4UserServices/csc/globalsign/v0',
             'integrazione79': 'http://192.168.0.79:8080/Time4UserServices/csc/globalsign/v0',
             'collaudo': 'https://globalsign.test4mind.com/csc/v0',
+            'collaudo87': 'http://192.168.0.87:8080/Time4UserServices/csc/globalsign/v0',
             'produzione': 'https://globalsign.time4mind.com/csc/v0',
             'disaster recovery': 'https://globalsign-dr.time4mind.com/csc/v0'
         }),
@@ -651,6 +658,7 @@ class CSC(object):
             'integrazione78': 'http://192.168.0.78:8080/Time4UserServices/csc/nemid/v0',
             'integrazione79': 'http://192.168.0.79:8080/Time4UserServices/csc/nemid/v0',
             'collaudo': 'https://nemid.test4mind.com/csc/v0',
+            'collaudo87': 'http://192.168.0.87:8080/Time4UserServices/csc/nemid/v0',
             'produzione': 'https://nemid.time4mind.com/csc/v0',
             'disaster recovery': 'https://nemid-dr.time4mind.com/csc/v0'
         }),
@@ -674,6 +682,7 @@ class CSC(object):
         'bankid-col':       'https://bankid.test4mind.com/csc/v0',
         'bankidno-col':     'https://bankidno.test4mind.com/csc/v0',
         'collaudo':         'https://services.test4mind.com/csc/v0',
+        'collaudo87':       'http://192.168.0.87:8080/Time4UserServices/csc/v0',
         'ftn-col':          'https://ftn.test4mind.com/csc/v0',
         'globalsign-col':   'https://globalsign.test4mind.com/csc/v0',
         'nemid-col':        'https://nemid.test4mind.com/csc/v0',
@@ -709,6 +718,7 @@ class CSC(object):
         ('adobe-col',          'https://services.test4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
         ('bankid-col',         'https://services.test4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-col',       'https://services.test4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
+        ('ftn-col',            'https://services.test4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-col',     'https://services.test4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
         ('intesi-col',         'https://services.test4mind.com/res_ext/logo_IG_symbol.png'),
         ('nemid-col',          'https://services.test4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
@@ -717,6 +727,7 @@ class CSC(object):
         ('adobe-prod',         'https://services.time4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
         ('bankid-prod',        'https://services.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
+        ('ftn-prod',           'https://services.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
         ('intesi-prod-new',    'https://services.time4mind.com/res_ext/logo_IG_symbol.png'),
         ('nemid-prod',         'https://services.time4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
@@ -725,6 +736,7 @@ class CSC(object):
         ('adobe-dr',           'https://services-dr.time4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
         ('bankid-dr',          'https://services-dr.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
+        ('ftn-dr',             'https://services-dr.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-dr',      'https://services-dr.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
         ('intesi-dr',          'https://services-dr.time4mind.com/res_ext/logo_IG_symbol.png'),
         ('nemid-dr',           'https://services-dr.time4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
@@ -1155,7 +1167,7 @@ class CSC(object):
         if credential_id is None:
             raise RuntimeError('*** Credential ID unavailable ***')
         if self.session_key is None:
-            raise RuntimeError('*** Session key unavailable ***')
+            self.session_key = self._get_session_key()
 
         payload = {
             'certificates': certificates,
@@ -1189,7 +1201,7 @@ class CSC(object):
 
         return is_valid, auth_mode, pin_presence, otp_presence, otp_type, key_algo
 
-    def send_otp(self, credential_id=None):
+    def send_otp_test(self, credential_id=None):
         if self.session_key is None:
             raise RuntimeError('*** Session key unavailable ***')
         if credential_id is None:
@@ -1214,6 +1226,24 @@ class CSC(object):
             if 'error' not in rr:
                 self.logger.debug(CSC.highlight(f'* OTP for credential {credential_id} sent', 'DeepSkyBlue2'))
                 break
+
+    def send_otp(self, credential_id):
+        try:
+            cert_status, auth_mode, pin_presence, otp_presence, otp_type, key_algo = self.get_credential_info(credential_id)
+            if auth_mode != 'implicit' and otp_presence and otp_type == 'online':
+                payload = {
+                    'credentialID': credential_id
+                }
+                r = requests.post(self.service_URLs['credentials/sendOTP'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, json=payload)
+                if r.text != '' and 'error' in r.json():
+                    self._set_error_level(3)
+                    j = r.json()
+                    self.logger.error(f'{CSC.highlight("An error occurred while sending an OTP for credential {credential_id}", "red", bold=True)} - {j}')
+        except Exception as e:
+            self._set_error_level(3)
+            self.logger.error(f'{CSC.highlight("An error occurred while sending an OTP for credential {credential_id}", "red", bold=True)} - {type(e).__name__} {e}')
+        self.single_revoke(noout=True)
+
 
     def authorize_test(self, credential_id=None, auth_mode='explicit', pin_presence=True, otp_presence=True, otp_type='online', num_signatures=20, is_valid=True):
         if self.session_key is None:
@@ -1756,14 +1786,16 @@ class CSC(object):
                 self._set_error_level(2)
                 self.logger.error(CSC.highlight('*** Unable to perfom revoke test 4: login failed', 'red'))
 
-    def single_revoke(self, token):
+    def single_revoke(self, token=None, noout=False):
+        token = self.session_key if token is None or token == '' else token
         if token is None or token == '':
             self.logger.info(CSC.highlight('Cannot revoke empty token', 'yellow'))
             return
         payload = {
             'token': token
         }
-        self.logger.info(CSC.highlight(f'Revoking token {token} ...', bold=True))
+        if not noout:
+            self.logger.info(CSC.highlight(f'Revoking token {token} ...', bold=True))
         r = requests.post(self.service_URLs['auth/revoke'], verify=False, headers={ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.session_key }, json=payload)
         if r.text != '' and 'error' in r.json():
             self._set_error_level(2)
@@ -1885,7 +1917,7 @@ class CSC(object):
                 if r != 'y':
                     abort_signature = True
             elif not self.quiet and not abort_signature and auth_mode in [ 'explicit', 'oauth2code' ] and otp_presence and otp_type == 'online':
-                self.send_otp(credential_id)
+                self.send_otp_test(credential_id)
 
             if not abort_signature:
                 self.authorize_test(credential_id, auth_mode, pin_presence, otp_presence, otp_type, 17, is_valid)
@@ -1972,7 +2004,7 @@ class CSC(object):
                 except RuntimeError as e:
                     self.logger.error(CSC.highlight(f'An error occurred while getting info for credential {c} - {str(e)}', 'red', bold=True))
         else:
-            self.logger.warn(CSC.highlight('No credential found', 'red', bold=True))
+            self.logger.warn(CSC.highlight('No credentials found', 'red', bold=True))
         self._ask_and_revoke()
 
     @staticmethod
@@ -2030,7 +2062,7 @@ class CSC(object):
         self.logger.info(f'DEBUG - exit value {self.error_level}') # TODO remove
         return self.error_level
 
-    def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, quiet=False, logger=None):
+    def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, quiet=False, logger=None, noout=False):
         #ctx = ssl.create_default_context()
         #ctx.check_hostname = False
         #ctx.verify_mode = ssl.CERT_NONE
@@ -2073,16 +2105,17 @@ class CSC(object):
         self.error_level = 0
         self.quiet = quiet
 
-        self.logger.debug(CSC.getinfostr())
-        self.logger.info(f'{CSC.highlight("Using endpoint:", bold=True)} {CSC.highlight(context, underline=True)}')
-        if self.username is not None:
-            self.logger.info(f'{CSC.highlight("Using account:", bold=True)} {CSC.highlight(self.username, "DeepSkyBlue2")}')
-        if self.credential_encoded is not None:
-            self.logger.debug(f'{CSC.highlight("Using authorization header:", bold=True)} {self.credential_encoded}')
-        self.logger.debug('\n###\n')
+        if not noout:
+            self.logger.debug(CSC.getinfostr())
+            self.logger.info(f'{CSC.highlight("Using endpoint:", bold=True)} {CSC.highlight(context, underline=True)}')
+            if self.username is not None:
+                self.logger.info(f'{CSC.highlight("Using account:", bold=True)} {CSC.highlight(self.username, "DeepSkyBlue2")}')
+            if self.credential_encoded is not None:
+                self.logger.debug(f'{CSC.highlight("Using authorization header:", bold=True)} {self.credential_encoded}')
+            self.logger.debug('\n###\n')
 
-        signal.signal(signal.SIGINT,  self._sig_handler)
-        signal.signal(signal.SIGTERM, self._sig_handler)
+            signal.signal(signal.SIGINT,  self._sig_handler)
+            signal.signal(signal.SIGTERM, self._sig_handler)
 
         if 'https' in context:
             try:
@@ -2102,7 +2135,7 @@ def validate_session(ctx, param, value):
         raise click.BadParameter(f'Cannot use session [{value}], missing environment value')
     return value
 
-def initialize_with_TUI(quiet, logger):
+def initialize_with_TUI(quiet, logger, noout=False):
     m = CSCCursesMenu(CSCCursesMenu.DEFAULT_CREDENTIALS_FILE_NAME)
     try:
         data = m.display()
@@ -2121,7 +2154,7 @@ def initialize_with_TUI(quiet, logger):
         logger.error(CSC.highlight('An problem occurred while getting data from the TUI', 'red', bold=True))
         sys.exit(1)
 
-    return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet, logger=logger)
+    return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet, logger=logger, noout=noout)
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']), invoke_without_command=True)
 @click.option('--user',        '-u', metavar='<username>', help='Account username to be used.')
@@ -2147,7 +2180,10 @@ def main(ctx, quiet, user, passw, environment, session, log):
      2 \u2192  Error: one or more minor checks failed (e.g. wrong error messages)
      3 \u2192  Critical error: core signature functionalities are compromised
 
-    ARGS: with `check' command, the credential ID(s) to be tested. If no credential ID is provided then check every credential found in the account and perform other non credential-related checks
+    ARGS: with `check' command, the credential ID(s) to be tested. If no credential ID is provided then check every credential found in the account and perform other non credential-related checks.
+
+    \b
+    With `otp' command, a single credential ID is expected.
     """
 
     ctx.ensure_object(dict)
@@ -2205,6 +2241,18 @@ def check(ctx, credential_id):
             csc.check_credential(credential_id[i], ask_revoke=(i == len(credential_id) - 1), login_executed=(i > 0))
     else:
         csc.global_test()
+    sys.exit(csc.get_error_level())
+
+@main.command()
+@click.argument('credential_id', nargs=1)
+@click.pass_context
+def otp(ctx, credential_id):
+    """Send the OTP for a credential passed as an argument"""
+    if not ctx.obj['environment'] or (not ctx.obj['user'] or not ctx.obj['password']) and not ctx.obj['session']:
+        csc = initialize_with_TUI(quiet=ctx.obj['quiet'], logger=ctx.obj['logger'], noout=True)
+    else:
+        csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'], logger=ctx.obj['logger'], noout=True)
+    csc.send_otp(credential_id)
     sys.exit(csc.get_error_level())
 
 if __name__ == "__main__":
