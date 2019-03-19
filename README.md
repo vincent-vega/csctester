@@ -20,7 +20,9 @@ Usage: csctester3.py [OPTIONS] COMMAND [ARGS]...
 
   ARGS: with `check' command, the credential ID(s) to be tested. If no
   credential ID is provided then check every credential found in the account
-  and perform other non credential-related checks
+  and perform other non credential-related checks.
+
+  With `otp' command, a single credential ID is expected.
 
 Options:
   -u, --user <username>         Account username to be used.
@@ -47,6 +49,7 @@ Commands:
          credential-related checks
   list   List the available environments and exit
   logo   Check logo files and exit
+  otp    Send the OTP for a credential passed as an argument
   scan   Scan the user credentials: no signature test will be performed, only
          the credential details will be shown.
 ```
