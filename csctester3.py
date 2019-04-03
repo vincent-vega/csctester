@@ -627,7 +627,7 @@ class CSC(object):
             'localhost': 'http://localhost:8080/Time4UserServices/csc/bankidno/v0',
             'integrazione78': 'http://vmde-twc-01:8080/Time4UserServices/csc/bankidno/v0',
             'integrazione79': 'http://vmde-twc-02:8080/Time4UserServices/csc/bankidno/v0',
-            'collaudo': 'https://bankidno.test4mind.com/csc/v0',
+            'collaudo': 'https://bnkidno.test4mind.com/csc/v0',
             'collaudo87': 'http://c-twc-01:8080/Time4UserServices/csc/bankidno/v0',
             'produzione': 'https://bnkidno.time4mind.com/csc/v0',
             'produzione5': 'http://p-twc-05:8080/Time4UserServices/csc/bankidno/v0',
@@ -641,14 +641,14 @@ class CSC(object):
             'integrazione': 'https://bankid.int4mind.com/csc/v0',
             'integrazione78': 'http://vmde-twc-01:8080/Time4UserServices/csc/bankid/v0',
             'integrazione79': 'http://vmde-twc-02:8080/Time4UserServices/csc/bankid/v0',
-            'collaudo': 'https://bankid.test4mind.com/csc/v0',
+            'collaudo': 'https://bnkidse.test4mind.com/csc/v0',
             'collaudo87': 'http://c-twc-01:8080/Time4UserServices/csc/bankid/v0',
             'produzione': 'https://bnkid.time4mind.com/csc/v0',
             'produzione5': 'http://p-twc-05:8080/Time4UserServices/csc/bankid/v0',
             'produzione6': 'http://p-twc-06:8080/Time4UserServices/csc/bankid/v0',
             'produzione7': 'http://p-twc-07:8080/Time4UserServices/csc/bankid/v0',
             'produzione8': 'http://p-twc-08:8080/Time4UserServices/csc/bankid/v0',
-            'disaster recovery': 'https://bnkid-dr.time4mind.com/csc/v0'
+            'disaster recovery': 'https://bnkidse-dr.time4mind.com/csc/v0'
         }),
         ('ftn', {
             'localhost': 'http://localhost:8080/Time4UserServices/csc/ftn/v0',
@@ -707,8 +707,8 @@ class CSC(object):
         'transsped-int':    'https://transsped-int.time4mind.com/csc/v0',
 
         'adobe-col':        'https://adobe.test4mind.com/csc/v0',
-        'bankid-col':       'https://bankid.test4mind.com/csc/v0',
-        'bankidno-col':     'https://bankidno.test4mind.com/csc/v0',
+        'bankid-col':       'https://bnkidse.test4mind.com/csc/v0',
+        'bankidno-col':     'https://bnkidno.test4mind.com/csc/v0',
         'collaudo':         'https://services.test4mind.com/csc/v0',
         'collaudo87':       'http://c-twc-01:8080/Time4UserServices/csc/v0',
         'ftn-col':          'https://ftn.test4mind.com/csc/v0',
@@ -729,7 +729,7 @@ class CSC(object):
         'transsped':        'https://services.cloudsignature.online/csc/v0',
 
         'adobe-dr':         'https://adobe-dr.time4mind.com/csc/v0',
-        'bankid-dr':        'https://bnkid-dr.time4mind.com/csc/v0',
+        'bankid-dr':        'https://bnkidse-dr.time4mind.com/csc/v0',
         'dr':               'https://services-dr.time4mind.com/csc/v0',
         'ftn-dr':           'https://ftn-dr.time4mind.com/csc/v0',
         'globalsign-dr':    'https://globalsign-dr.time4mind.com/csc/v0',
