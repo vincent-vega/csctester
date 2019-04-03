@@ -643,7 +643,7 @@ class CSC(object):
             'integrazione79': 'http://vmde-twc-02:8080/Time4UserServices/csc/bankid/v0',
             'collaudo': 'https://bnkidse.test4mind.com/csc/v0',
             'collaudo87': 'http://c-twc-01:8080/Time4UserServices/csc/bankid/v0',
-            'produzione': 'https://bnkid.time4mind.com/csc/v0',
+            'produzione': 'https://bnkidse.time4mind.com/csc/v0',
             'produzione5': 'http://p-twc-05:8080/Time4UserServices/csc/bankid/v0',
             'produzione6': 'http://p-twc-06:8080/Time4UserServices/csc/bankid/v0',
             'produzione7': 'http://p-twc-07:8080/Time4UserServices/csc/bankid/v0',
@@ -698,7 +698,7 @@ class CSC(object):
     env_URLs = {
         'localhost':        'http://localhost:8080/Time4UserServices/csc/v0',
 
-        'bankid-int':       'https://bankid.int4mind.com/csc/v0',
+        'bankidse-int':     'https://bankid.int4mind.com/csc/v0',
         'integrazione':     'https://services.int4mind.com/csc/v0',
         'integrazione78':   'http://vmde-twc-01:8080/Time4UserServices/csc/v0',
         'integrazione79':   'http://vmde-twc-02:8080/Time4UserServices/csc/v0',
@@ -707,8 +707,8 @@ class CSC(object):
         'transsped-int':    'https://transsped-int.time4mind.com/csc/v0',
 
         'adobe-col':        'https://adobe.test4mind.com/csc/v0',
-        'bankid-col':       'https://bnkidse.test4mind.com/csc/v0',
         'bankidno-col':     'https://bnkidno.test4mind.com/csc/v0',
+        'bankidse-col':     'https://bnkidse.test4mind.com/csc/v0',
         'collaudo':         'https://services.test4mind.com/csc/v0',
         'collaudo87':       'http://c-twc-01:8080/Time4UserServices/csc/v0',
         'ftn-col':          'https://ftn.test4mind.com/csc/v0',
@@ -717,7 +717,8 @@ class CSC(object):
         'transsped-col':    'https://transsped.test4mind.com/csc/v0',
 
         'adobe':            'https://adobe.time4mind.com/csc/v0',
-        'bankid':           'https://bnkid.time4mind.com/csc/v0',
+        'bankidno':         'https://bnkidno.time4mind.com/csc/v0',
+        'bankidse':         'https://bnkidse.time4mind.com/csc/v0',
         'ftn':              'https://ftn.time4mind.com/csc/v0',
         'globalsign':       'https://globalsign.time4mind.com/csc/v0',
         'nemid':            'https://nemid.time4mind.com/csc/v0',
@@ -729,7 +730,8 @@ class CSC(object):
         'transsped':        'https://services.cloudsignature.online/csc/v0',
 
         'adobe-dr':         'https://adobe-dr.time4mind.com/csc/v0',
-        'bankid-dr':        'https://bnkidse-dr.time4mind.com/csc/v0',
+        'bankidno-dr':      'https://bnkidno-dr.time4mind.com/csc/v0',
+        'bankidse-dr':      'https://bnkidse-dr.time4mind.com/csc/v0',
         'dr':               'https://services-dr.time4mind.com/csc/v0',
         'ftn-dr':           'https://ftn-dr.time4mind.com/csc/v0',
         'globalsign-dr':    'https://globalsign-dr.time4mind.com/csc/v0',
@@ -743,12 +745,12 @@ class CSC(object):
         ('transsped-prod',     'https://www.time4mind.com/resource/img/csc_transsped.png'), #TODO remove /var/www/t4mind/resource/img/csc_transsped.jpg
 
         #new
-        ('bankid-int',         'https://services.int4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
+        ('bankidse-int',       'https://services.int4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-int',       'https://services.int4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('nemid-int',          'https://services.int4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
 
         ('adobe-col',          'https://services.test4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
-        ('bankid-col',         'https://services.test4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
+        ('bankidse-col',       'https://services.test4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-col',       'https://services.test4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('ftn-col',            'https://services.test4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-col',     'https://services.test4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
@@ -757,7 +759,7 @@ class CSC(object):
         ('transsped-col',      'https://services.test4mind.com/res_ext/vendors/transsped/csc_transsped.png'),
 
         ('adobe-prod',         'https://services.time4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
-        ('bankid-prod',        'https://services.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
+        ('bankidse-prod',      'https://services.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('ftn-prod',           'https://services.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
@@ -766,7 +768,7 @@ class CSC(object):
         ('transsped-prod-new', 'https://services.time4mind.com/res_ext/vendors/transsped/csc_transsped.png'),
 
         ('adobe-dr',           'https://services-dr.time4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
-        ('bankid-dr',          'https://services-dr.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
+        ('bankidse-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('ftn-dr',             'https://services-dr.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-dr',      'https://services-dr.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
@@ -780,25 +782,25 @@ class CSC(object):
         ('transsped-prod',     'https://www.time4mind.com/resource/CSC_OAUTH_resources/vendors/transsped/img/faviconX180.png'), #TODO remove
 
         #new
-        ('bankid-int',         'https://services.int4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
+        ('bankidse-int',       'https://services.int4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-int',       'https://services.int4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('nemid-int',          'https://services.int4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
 
-        ('bankid-col',         'https://services.test4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
+        ('bankidse-col',       'https://services.test4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-col',       'https://services.test4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('globalsign-col',     'https://services.test4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
         ('intesi-col',         'https://services.test4mind.com/res_ext/img/faviconX180.png'), #XXX ???
         ('nemid-col',          'https://services.test4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
         ('transsped-col-new',  'https://services.test4mind.com/res_ext/vendors/transsped/img/oauthLogo.png'),
 
-        ('bankid-prod',        'https://services.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
+        ('bankidse-prod',      'https://services.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
         ('intesi-prod',        'https://services.time4mind.com/res_ext/faviconX180.png'), #XXX ???
         ('nemid-prod',         'https://services.time4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
         ('transsped-prod-new', 'https://services.time4mind.com/res_ext/vendors/transsped/img/oauthLogo.png'),
 
-        ('bankid-dr',          'https://services-dr.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
+        ('bankidse-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('globalsign-dr',      'https://services-dr.time4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
         ('intesi-dr',          'https://services-dr.time4mind.com/res_ext/faviconX180.png'), #XXX ???
