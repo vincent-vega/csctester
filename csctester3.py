@@ -703,7 +703,7 @@ class CSC(object):
         'integrazione78':   'http://vmde-twc-01:8080/Time4UserServices/csc/v0',
         'integrazione79':   'http://vmde-twc-02:8080/Time4UserServices/csc/v0',
         'nemid-int':        'https://nemid.int4mind.com/csc/v0',
-        'transsped-78':     'http://vmde-twc-01:8080/Time4UserServices/csc/transsped/v0',
+        'transsped78':     'http://vmde-twc-01:8080/Time4UserServices/csc/transsped/v0',
         'transsped-int':    'https://transsped-int.time4mind.com/csc/v0',
 
         'adobe-col':        'https://adobe.test4mind.com/csc/v0',
@@ -1283,7 +1283,8 @@ class CSC(object):
         if self.session_key is None:
             raise RuntimeError('*** Session key unavailable ***')
         if auth_mode in [ 'oauth2code', 'oauth2token' ]:
-            self.logger.warn(CSC.highlight(f'Unable to perform authorizations test: invalid authMode {auth_mode}', 'yellow', bold=True))
+            self.SAD = None
+            self.logger.warn(CSC.highlight(f'Unable to perform authorizations test: invalid authMode \u2192  {auth_mode}', 'yellow', bold=True))
             return
         pin = None
         if auth_mode == 'explicit' and pin_presence:
