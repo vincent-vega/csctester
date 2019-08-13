@@ -676,6 +676,20 @@ class CSC(object):
             'produzione8': 'http://p-twc-08:8080/Time4UserServices/csc/globalsign/v0',
             'disaster recovery': 'https://globalsign-dr.time4mind.com/csc/v0'
         }),
+        ('idin', {
+            'localhost': 'http://localhost:8080/Time4UserServices/csc/idin/v0',
+            'integrazione': 'https://idin.int4mind.com/csc/v0',
+            'integrazione78': 'http://vmde-twc-01:8080/Time4UserServices/csc/idin/v0',
+            'integrazione79': 'http://vmde-twc-02:8080/Time4UserServices/csc/idin/v0',
+            'collaudo': 'https://idin.test4mind.com/csc/v0',
+            'collaudo87': 'http://c-twc-01:8080/Time4UserServices/csc/idin/v0',
+            'produzione': 'https://idin.time4mind.com/csc/v0',
+            'produzione5': 'http://p-twc-05:8080/Time4UserServices/csc/idin/v0',
+            'produzione6': 'http://p-twc-06:8080/Time4UserServices/csc/idin/v0',
+            'produzione7': 'http://p-twc-07:8080/Time4UserServices/csc/idin/v0',
+            'produzione8': 'http://p-twc-08:8080/Time4UserServices/csc/idin/v0',
+            'disaster recovery': 'https://idin-dr.time4mind.com/csc/v0'
+        }),
         ('nemid', {
             'localhost': 'http://localhost:8080/Time4UserServices/csc/nemid/v0',
             'integrazione': 'https://nemid.int4mind.com/csc/v0',
@@ -699,6 +713,7 @@ class CSC(object):
         'localhost':        'http://localhost:8080/Time4UserServices/csc/v0',
 
         'bankidse-int':     'https://bankid.int4mind.com/csc/v0',
+        'idin-int':         'https://idin.int4mind.com/csc/v0',
         'integrazione':     'https://services.int4mind.com/csc/v0',
         'integrazione78':   'http://vmde-twc-01:8080/Time4UserServices/csc/v0',
         'integrazione79':   'http://vmde-twc-02:8080/Time4UserServices/csc/v0',
@@ -713,6 +728,7 @@ class CSC(object):
         'collaudo87':       'http://c-twc-01:8080/Time4UserServices/csc/v0',
         'ftn-col':          'https://ftn.test4mind.com/csc/v0',
         'globalsign-col':   'https://globalsign.test4mind.com/csc/v0',
+        'idin-col':         'https://idin.test4mind.com/csc/v0',
         'nemid-col':        'https://nemid.test4mind.com/csc/v0',
         'transsped-col':    'https://transsped.test4mind.com/csc/v0',
 
@@ -721,6 +737,7 @@ class CSC(object):
         'bankidse':         'https://bnkidse.time4mind.com/csc/v0',
         'ftn':              'https://ftn.time4mind.com/csc/v0',
         'globalsign':       'https://globalsign.time4mind.com/csc/v0',
+        'idin':             'https://idin.time4mind.com/csc/v0',
         'nemid':            'https://nemid.time4mind.com/csc/v0',
         'produzione':       'https://services.time4mind.com/csc/v0',
         'produzione5':      'http://p-twc-05:8080/Time4UserServices/csc/v0',
@@ -735,6 +752,7 @@ class CSC(object):
         'dr':               'https://services-dr.time4mind.com/csc/v0',
         'ftn-dr':           'https://ftn-dr.time4mind.com/csc/v0',
         'globalsign-dr':    'https://globalsign-dr.time4mind.com/csc/v0',
+        'idin-dr':          'https://idin-dr.time4mind.com/csc/v0',
         'nemid-dr':         'https://nemid-dr.time4mind.com/csc/v0',
         'transsped-dr':     'https://transsped-dr.time4mind.com/csc/v0'
     }
@@ -747,6 +765,7 @@ class CSC(object):
         #new
         ('bankidse-int',       'https://services.int4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
         ('bankidno-int',       'https://services.int4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
+        ('idin-int',           'https://services.int4mind.com/res_ext/vendors/idin/idin_logo.png'),
         ('nemid-int',          'https://services.int4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
 
         ('adobe-col',          'https://services.test4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
@@ -754,6 +773,7 @@ class CSC(object):
         ('bankidno-col',       'https://services.test4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('ftn-col',            'https://services.test4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-col',     'https://services.test4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
+        ('idin-col',           'https://services.test4mind.com/res_ext/vendors/idin/idin_logo.png'),
         ('intesi-col',         'https://services.test4mind.com/res_ext/logo_IG_symbol.png'),
         ('nemid-col',          'https://services.test4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
         ('transsped-col',      'https://services.test4mind.com/res_ext/vendors/transsped/csc_transsped.png'),
@@ -763,6 +783,7 @@ class CSC(object):
         ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('ftn-prod',           'https://services.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
+        ('idin-prod',          'https://services.time4mind.com/res_ext/vendors/idin/idin_logo.png'),
         ('intesi-prod-new',    'https://services.time4mind.com/res_ext/logo_IG_symbol.png'),
         ('nemid-prod',         'https://services.time4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
         ('transsped-prod-new', 'https://services.time4mind.com/res_ext/vendors/transsped/csc_transsped.png'),
@@ -772,6 +793,7 @@ class CSC(object):
         ('bankidno-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
         ('ftn-dr',             'https://services-dr.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
         ('globalsign-dr',      'https://services-dr.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
+        ('idin-dr',            'https://services-dr.time4mind.com/res_ext/vendors/idin/idin_logo.png'),
         ('intesi-dr',          'https://services-dr.time4mind.com/res_ext/logo_IG_symbol.png'),
         ('nemid-dr',           'https://services-dr.time4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
         ('transsped-dr',       'https://services-dr.time4mind.com/res_ext/vendors/transsped/csc_transsped.png')
@@ -784,11 +806,13 @@ class CSC(object):
         #new
         ('bankidse-int',       'https://services.int4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-int',       'https://services.int4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
+        ('idin-int',           'https://services.int4mind.com/res_ext/vendors/idin/img/oauthLogo.png'),
         ('nemid-int',          'https://services.int4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
 
         ('bankidse-col',       'https://services.test4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-col',       'https://services.test4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('globalsign-col',     'https://services.test4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
+        ('idin-col',           'https://services.test4mind.com/res_ext/vendors/idin/img/oauthLogo.png'),
         ('intesi-col',         'https://services.test4mind.com/res_ext/img/faviconX180.png'), #XXX ???
         ('nemid-col',          'https://services.test4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
         ('transsped-col-new',  'https://services.test4mind.com/res_ext/vendors/transsped/img/oauthLogo.png'),
@@ -796,6 +820,7 @@ class CSC(object):
         ('bankidse-prod',      'https://services.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
+        ('idin-prod',          'https://services.time4mind.com/res_ext/vendors/idin/img/oauthLogo.png'),
         ('intesi-prod',        'https://services.time4mind.com/res_ext/faviconX180.png'), #XXX ???
         ('nemid-prod',         'https://services.time4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
         ('transsped-prod-new', 'https://services.time4mind.com/res_ext/vendors/transsped/img/oauthLogo.png'),
@@ -803,6 +828,7 @@ class CSC(object):
         ('bankidse-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
         ('bankidno-dr',        'https://services-dr.time4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
         ('globalsign-dr',      'https://services-dr.time4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
+        ('idin-dr',            'https://services-dr.time4mind.com/res_ext/vendors/idin/img/oauthLogo.png'),
         ('intesi-dr',          'https://services-dr.time4mind.com/res_ext/faviconX180.png'), #XXX ???
         ('nemid-dr',           'https://services-dr.time4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
         ('transsped-dr',       'https://services-dr.time4mind.com/res_ext/vendors/transsped/img/oauthLogo.png')
@@ -2186,7 +2212,7 @@ def initialize_with_TUI(quiet, logger, noout=False):
         if not curses.isendwin():
             m.destroy()
     if not data:
-        logger.error(CSC.highlight('An problem occurred while getting data from the TUI', 'red', bold=True))
+        logger.error(CSC.highlight('A problem occurred while getting data from the TUI', 'red', bold=True))
         sys.exit(1)
 
     return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet, logger=logger, noout=noout)
