@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 __author__  = 'Davide Barelli'
-__email__   = 'dbarelli@wersec.com'
 __version__ = '2.1.1'
 __user__    = [ 'Davide', 'Barelli' ]
 
