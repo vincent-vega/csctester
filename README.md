@@ -1,4 +1,4 @@
-![alt text](https://cloudsignatureconsortium.org/wp-content/uploads/2018/09/logo_light.png "Cloud Signature Consortium")
+![Cloud Signature Consortium logo](https://cloudsignatureconsortium.org/wp-content/themes/CDC/img/logo_dark.png "Cloud Signature Consortium")
 
 CSC Tester
 ==========
