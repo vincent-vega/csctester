@@ -1,9 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__  = 'Davide Barelli'
+# import pudb; pu.db
+from collections import OrderedDict
+from logging.handlers import TimedRotatingFileHandler
+from operator import itemgetter
+import base64
+import click
+import copy
+import curses
+import curses.textpad as textpad
+import getpass
+import json
+import logging
+import os
+import re
+import requests
+import shutil
+import signal
+import sys
+import tempfile
+import traceback
+
+__author__ = 'Davide Barelli'
 __version__ = '2.1.1'
-__user__    = [ 'Davide', 'Barelli' ]
+__user__ = [ 'Davide', 'Barelli' ]
 
 '''
 TODO List
@@ -18,32 +39,14 @@ BUGS
 
 '''
 
-import curses.textpad as textpad
-from collections import OrderedDict
-from operator import itemgetter
-from logging.handlers import TimedRotatingFileHandler
-import base64
-import click
-import copy
-import curses
-import getpass
-import json
-import logging
-import os
-#import pudb; pu.db
-import re
-import requests
-import shutil
-import signal
-#import ssl
-import sys
-import tempfile
-import traceback
 
 class GlobalAttributes:
     pass
+
+
 _priv_attr = GlobalAttributes()
 _priv_attr.colorize = True
+
 
 def get_logger(log_file_name=None):
     global _priv_attr
@@ -56,10 +59,10 @@ def get_logger(log_file_name=None):
         logger.setLevel(logging.INFO)
     else:
         handler = logging.StreamHandler(sys.stdout)
-        #handler.setLevel(logging.DEBUG)
         logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
     return logger
+
 
 def logger_style_artist(func):
     def wrapper(*args, **kwargs):
@@ -67,6 +70,7 @@ def logger_style_artist(func):
         # do not colorize output when logging to a file
         return func(*args, **kwargs) if _priv_attr.colorize else args[0]
     return wrapper
+
 
 class CSCCursesMenu(object):
 
@@ -76,34 +80,34 @@ class CSCCursesMenu(object):
         self.running = True
         os.system('clear')
         self.screen = curses.initscr()
-        self.screen.keypad(1) #enable keyboard numpad
+        self.screen.keypad(1)  # enable keyboard numpad
 
-        #init curses and curses input
-        curses.noecho() #disable the keypress echo to prevent double input
-        curses.cbreak() #disable line buffers to run the keypress immediately
+        # init curses and curses input
+        curses.noecho()  # disable the keypress echo to prevent double input
+        curses.cbreak()  # disable line buffers to run the keypress immediately
         curses.start_color()
-        curses.curs_set(0) #hide cursor
+        curses.curs_set(0)  # hide cursor
 
-        #set up color pair
-        curses.init_pair(1, curses.COLOR_BLUE,  curses.COLOR_CYAN)
-        curses.init_pair(2, curses.COLOR_RED,   curses.COLOR_BLACK)
+        # set up color pair
+        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_CYAN)
+        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(4, 33,                 curses.COLOR_BLACK)
-        curses.init_pair(5, curses.COLOR_RED,   curses.COLOR_BLACK)
-        curses.init_pair(6, curses.COLOR_CYAN,  curses.COLOR_BLACK)
+        curses.init_pair(4, 33, curses.COLOR_BLACK)
+        curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
-        self.hilite_color     = curses.color_pair(1)
-        self.title_color      = curses.color_pair(2)
+        self.hilite_color = curses.color_pair(1)
+        self.title_color = curses.color_pair(2)
         self.status_bar_color = curses.color_pair(3)
-        self.blue_color       = curses.color_pair(4)
-        self.red_color        = curses.color_pair(5)
-        self.cyan_color       = curses.color_pair(6)
-        self.normal_color     = curses.A_NORMAL
+        self.blue_color = curses.color_pair(4)
+        self.red_color = curses.color_pair(5)
+        self.cyan_color = curses.color_pair(6)
+        self.normal_color = curses.A_NORMAL
 
         self.menu = {
             'environment': {
                 'subtitle': 'Choose an environment'
-                #parent: exit
+                # parent: exit
             },
             'virtual_host': {
                 'subtitle': 'Choose a virtual host',
@@ -115,7 +119,7 @@ class CSCCursesMenu(object):
             },
             'cache': {
                 'subtitle': None
-                #parent: exit
+                # parent: exit
             }
         }
         self._load_environment_menu()
@@ -126,7 +130,7 @@ class CSCCursesMenu(object):
         self.config_file_path = f'{self.script_dir}/{config_file_name}'
         try:
             f = open(self.config_file_path, 'r')
-        except:
+        except Exception:
             self.conf_file = False
             self.users_data = {}
         else:
@@ -152,21 +156,21 @@ class CSCCursesMenu(object):
         exit_option = "Exit"
 
         option_count = len(self.menu[sub_menu]['options'])
-        list_count = option_count + (0 if not back_option else 1) #considering back option
+        list_count = option_count + (0 if not back_option else 1)  # considering back option
 
         input_key = None
 
-        #keys mapping
-        back_keys  = [curses.KEY_LEFT, ord('B'), ord('b')]
-        down_keys  = [curses.KEY_DOWN, ord('J'), ord('j')]
+        # keys mapping
+        back_keys = [curses.KEY_LEFT, ord('B'), ord('b')]
+        down_keys = [curses.KEY_DOWN, ord('J'), ord('j')]
         enter_keys = [curses.KEY_RIGHT, ord('\n')]
-        exit_keys  = [ord('Q'), ord('q')]
-        help_keys  = [ord('H'), ord('h')]
-        up_keys    = [curses.KEY_UP, ord('K'), ord('k')]
+        exit_keys = [ord('Q'), ord('q')]
+        help_keys = [ord('H'), ord('h')]
+        up_keys = [curses.KEY_UP, ord('K'), ord('k')]
 
         self.selected_option = 0
         while input_key not in enter_keys:
-            #self.screen.clear()
+            # self.screen.clear()
             self.screen.erase()
             self.screen.border(0)
             self._draw_title()
@@ -196,14 +200,14 @@ class CSCCursesMenu(object):
                     self.selected_option = list_count
 
             if input_key in back_keys and back_option is not None:
-                self.selected_option = list_count - 1 #auto select back and return
+                self.selected_option = list_count - 1  # auto select back and return
                 break
 
             if input_key in help_keys:
                 self._help_scr()
 
             if input_key in exit_keys:
-                self.selected_option = list_count #auto select exit and return
+                self.selected_option = list_count  # auto select exit and return
                 break
 
         return self.selected_option
@@ -278,7 +282,7 @@ class CSCCursesMenu(object):
         sub_menu = self.menu['environment']
         sub_menu['options'] = [ { 'title': e.title(), 'value': e } for e in CSC.env_IDs ]
         self.environment_name = None
-        self.v_host_ctx_path  = None
+        self.v_host_ctx_path = None
 
     def _load_virtual_host_menu(self):
         self.menu['selected'] = 'virtual_host'
@@ -331,7 +335,8 @@ class CSCCursesMenu(object):
             {
                 'text': 'Use last configuration?',
                 'style': [ curses.A_BOLD ]
-            },{
+            },
+            {
                 'text': f'{cache["username"]} \u2192  {[ k for k, v in CSC.env_URLs.items() if v == cache["ctx_path"] ][0]}',
                 'style': [
                     curses.A_BOLD,
@@ -345,7 +350,7 @@ class CSCCursesMenu(object):
         use_cache = sub_menu['options'][selected_option]['value'] == 'y'
         if use_cache:
             self.environment_name = cache['environment']
-            self.v_host_ctx_path  = cache['ctx_path']
+            self.v_host_ctx_path = cache['ctx_path']
             self.username = cache['username']
             self.password = cache['password']
         return use_cache
@@ -376,7 +381,6 @@ class CSCCursesMenu(object):
         self._draw_status_bar('press any key to go back')
         self.screen.getch()
 
-
     def display(self):
         self.username = self.password = session_key = None
         use_cache = self._user_cache_management()
@@ -385,7 +389,7 @@ class CSCCursesMenu(object):
             return None
         while not use_cache:
             if not self.environment_name:
-                #environment
+                # environment
                 self._load_environment_menu()
                 sub_menu = self.menu['environment']
                 selected_option = self._prompt_selection()
@@ -395,12 +399,12 @@ class CSCCursesMenu(object):
                 env = sub_menu['options'][selected_option]
                 self.environment_name = env['value']
             elif not self.v_host_ctx_path:
-                #virtual host
+                # virtual host
                 self._load_virtual_host_menu()
                 sub_menu = self.menu['virtual_host']
                 selected_option = self._prompt_selection()
                 if selected_option is len(sub_menu['options']):
-                    #back
+                    # back
                     self.environment_name = None
                     continue
                 elif selected_option is len(sub_menu['options']) + 1:
@@ -409,12 +413,12 @@ class CSCCursesMenu(object):
                 v_host = sub_menu['options'][selected_option]
                 self.v_host_ctx_path = CSC.virtual_host[v_host['value']][self.environment_name]
             else:
-                #user
+                # user
                 sub_menu = self.menu['users']
                 self._load_users_menu()
                 selected_option = self._prompt_selection()
                 if selected_option is len(sub_menu['options']):
-                    #back
+                    # back
                     self.v_host_ctx_path = None
                     continue
                 elif selected_option is len(sub_menu['options']) + 1:
@@ -442,7 +446,7 @@ class CSCCursesMenu(object):
                 self.username = sub_menu['options'][selected_option]['value']
                 if self.username is not None:
                     self.password = self.curr_users[self.username]
-                #TODO no user available
+                # TODO no user available
                 break
         self.destroy()
         ret = {
@@ -452,7 +456,7 @@ class CSCCursesMenu(object):
             'password': self.password
         }
         if self.username and not use_cache:
-            #save last data used
+            # save last data used
             self.users_data['cache'] = ret
             self._update_config_file()
         ret['session_key'] = session_key
@@ -462,7 +466,7 @@ class CSCCursesMenu(object):
         self.username = username
         self.password = password
         if username == 'cache':
-            #TODO invalid username 'cache'
+            # TODO invalid username 'cache'
             return False
         if username not in self.users_data:
             self.users_data[username] = {
@@ -479,13 +483,13 @@ class CSCCursesMenu(object):
                 user['environment'] = []
             for e in user['environment']:
                 if 'name' in e and self.environment_name in e['name']:
-                    #clean old declarations
+                    # clean old declarations
                     if 'password' in e and password != e['password']:
                         e['name'].remove(self.environment_name)
                     elif 'password' not in e and password != 'password':
                         e['name'].remove(self.environment_name)
                     else:
-                        #configuration already present
+                        # configuration already present
                         return True
                     if len(e['name']) is 0:
                         user['environment'].remove(e)
@@ -525,7 +529,7 @@ class CSCCursesMenu(object):
                 try:
                     print(CSC.highlight('Restoring the old configuration', 'yellow'), file=sys.stderr)
                     shutil.copy(tmp_backup_file, self.config_file_path)
-                except:
+                except Exception:
                     print(CSC.highlight('Cannot restore configuration file, a backup file has been saved in path ' + tmp_backup_file, 'red', bold=True), file=sys.stderr)
                     return False
                 os.remove(tmp_backup_file)
@@ -549,16 +553,16 @@ class CSCCursesMenu(object):
         curses.curs_set(1)
         _, max_x = self.screen.getmaxyx()
         self.screen.border(0)
-        indent = max_x//5 - len(label) if max_x//5 - len(label) > 0 else 2
+        indent = max_x // 5 - len(label) if max_x // 5 - len(label) > 0 else 2
         curr_ord = self.curr_ord + 2
         self.screen.addstr(curr_ord, indent, label, curses.A_BOLD)
         self._draw_status_bar('Insert an empty string to go back')
         self.screen.refresh()
         try:
-            textpad.rectangle(self.screen, curr_ord - 1, indent + len(label) + 1, curr_ord + 1 , max_x - 2) #rectangle(win, uly, ulx, lry, lrx)
-            val = self.screen.getstr(curr_ord, indent + len(label) + 2, max_x - len(label) - indent - 4) #getstr(begin_y, begin_x, ncols)
+            textpad.rectangle(self.screen, curr_ord - 1, indent + len(label) + 1, curr_ord + 1, max_x - 2)  # rectangle(win, uly, ulx, lry, lrx)
+            val = self.screen.getstr(curr_ord, indent + len(label) + 2, max_x - len(label) - indent - 4)  # getstr(begin_y, begin_x, ncols)
             return val.decode('utf-8').strip()
-        except:
+        except Exception:
             return None
         finally:
             curses.noecho()
@@ -571,25 +575,25 @@ class CSCCursesMenu(object):
 
 class CSC(object):
 
-    ALGO_RSA_ENC             = '1.2.840.113549.1.1.1'
-    ALGO_SHA1_WITH_RSA_ENC   = '1.2.840.113549.1.1.5'
+    ALGO_RSA_ENC = '1.2.840.113549.1.1.1'
+    ALGO_SHA1_WITH_RSA_ENC = '1.2.840.113549.1.1.5'
     ALGO_SHA224_WITH_RSA_ENC = '1.2.840.113549.1.1.14'
     ALGO_SHA256_WITH_RSA_ENC = '1.2.840.113549.1.1.11'
     ALGO_SHA384_WITH_RSA_ENC = '1.2.840.113549.1.1.12'
     ALGO_SHA512_WITH_RSA_ENC = '1.2.840.113549.1.1.13'
-    ALGO_RSASSA_PSS          = '1.2.840.113549.1.1.10'
+    ALGO_RSASSA_PSS = '1.2.840.113549.1.1.10'
 
-    HASH_SHA1_OID   = '1.3.14.3.2.26'
+    HASH_SHA1_OID = '1.3.14.3.2.26'
     HASH_SHA224_OID = '2.16.840.1.101.3.4.2.4'
     HASH_SHA256_OID = '2.16.840.1.101.3.4.2.1'
     HASH_SHA384_OID = '2.16.840.1.101.3.4.2.2'
     HASH_SHA512_OID = '2.16.840.1.101.3.4.2.3'
 
-    HASH_SHA1_VALUE       = 'A8/XQ2YfB5dfovEiDFGUy6/0hFE=' #echo abc | sha1sum | xxd -r -p | base64 | tr -d '\r\n'
-    HASH_SHA224_VALUE     = '9ck7bwb3xW1+pyDBIeOx+2cw5c9fGNd2vw8tiA==' #echo abc | sha224sum | xxd -r -p | base64 | tr -d '\r\n'
-    HASH_SHA256_VALUE     = '7eqv8/F3StKIhnN3DG1kCX45G8Ni19b7NJgt3w79GMs=' #echo abc | sha256sum | xxd -r -p | base64 | tr -d '\r\n'
-    HASH_SHA384_VALUE     = '6NFCC0/0HD8SGG2JSpnhxKpoHaecRwB+na3s2eywSC7h4iRRDnSEB4wCifNDlrnD' #echo abc | sha384sum | xxd -r -p | base64 | tr -d '\r\n'
-    HASH_SHA512_VALUE     = 'TyhdDAzHcobYcxeYt6riY54oJw1BZvQNdpy73KUjBxTYSEg9Nk4vOf5suQg8FSKbOaM2FevG1XYF98Q/aQZznQ==' #echo abc | sha512sum | xxd -r -p | base64 | tr -d '\r\n'
+    HASH_SHA1_VALUE = 'A8/XQ2YfB5dfovEiDFGUy6/0hFE='  # echo abc | sha1sum | xxd -r -p | base64 | tr -d '\r\n'
+    HASH_SHA224_VALUE = '9ck7bwb3xW1+pyDBIeOx+2cw5c9fGNd2vw8tiA=='  # echo abc | sha224sum | xxd -r -p | base64 | tr -d '\r\n'
+    HASH_SHA256_VALUE = '7eqv8/F3StKIhnN3DG1kCX45G8Ni19b7NJgt3w79GMs='  # echo abc | sha256sum | xxd -r -p | base64 | tr -d '\r\n'
+    HASH_SHA384_VALUE = '6NFCC0/0HD8SGG2JSpnhxKpoHaecRwB+na3s2eywSC7h4iRRDnSEB4wCifNDlrnD'  # echo abc | sha384sum | xxd -r -p | base64 | tr -d '\r\n'
+    HASH_SHA512_VALUE = 'TyhdDAzHcobYcxeYt6riY54oJw1BZvQNdpy73KUjBxTYSEg9Nk4vOf5suQg8FSKbOaM2FevG1XYF98Q/aQZznQ=='  # echo abc | sha512sum | xxd -r -p | base64 | tr -d '\r\n'
 
     env_IDs = [
         'produzione'
@@ -623,28 +627,28 @@ class CSC(object):
     ])
 
     env_URLs = {
-        'produzione':       'https://services.time4mind.com/csc/v0'
+        'produzione': 'https://services.time4mind.com/csc/v0'
     }
 
     service_logo_URLs = OrderedDict([
-        ('adobe-prod',         'https://services.time4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
-        ('bankidse-prod',      'https://services.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
-        ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
-        ('ftn-prod',           'https://services.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
-        ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
-        ('idin-prod',          'https://services.time4mind.com/res_ext/vendors/idin/idin_logo.png'),
-        ('intesi-prod-new',    'https://services.time4mind.com/res_ext/logo_IG_symbol.png'),
-        ('nemid-prod',         'https://services.time4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
+        ('adobe-prod', 'https://services.time4mind.com/res_ext/vendors/adobe/csc_adobe.jpg'),
+        ('bankidse-prod', 'https://services.time4mind.com/res_ext/vendors/bankid/csc_bankid.jpg'),
+        ('bankidno-prod', 'https://services.time4mind.com/res_ext/vendors/bankidno/csc_bankidno.jpg'),
+        ('ftn-prod', 'https://services.time4mind.com/res_ext/vendors/ftn/logo-en.png'),
+        ('globalsign-prod', 'https://services.time4mind.com/res_ext/vendors/globalsign/csc_globalsign.png'),
+        ('idin-prod', 'https://services.time4mind.com/res_ext/vendors/idin/idin_logo.png'),
+        ('intesi-prod-new', 'https://services.time4mind.com/res_ext/logo_IG_symbol.png'),
+        ('nemid-prod', 'https://services.time4mind.com/res_ext/vendors/nemid/csc_nemid.jpg'),
         ('transsped-prod-new', 'https://services.time4mind.com/res_ext/vendors/transsped/csc_transsped.png')
     ])
 
     oauth_logo_URLs = OrderedDict([
-        ('bankidse-prod',      'https://services.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
-        ('bankidno-prod',      'https://services.time4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
-        ('globalsign-prod',    'https://services.time4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
-        ('idin-prod',          'https://services.time4mind.com/res_ext/vendors/idin/img/oauthLogo.png'),
-        ('intesi-prod',        'https://services.time4mind.com/res_ext/faviconX180.png'), #XXX ???
-        ('nemid-prod',         'https://services.time4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
+        ('bankidse-prod', 'https://services.time4mind.com/res_ext/vendors/bankid/img/oauthLogo.png'),
+        ('bankidno-prod', 'https://services.time4mind.com/res_ext/vendors/bankidno/img/oauthLogo.png'),
+        ('globalsign-prod', 'https://services.time4mind.com/res_ext/vendors/globalsign/img/oauthLogo.png'),
+        ('idin-prod', 'https://services.time4mind.com/res_ext/vendors/idin/img/oauthLogo.png'),
+        ('intesi-prod', 'https://services.time4mind.com/res_ext/faviconX180.png'),  # XXX ???
+        ('nemid-prod', 'https://services.time4mind.com/res_ext/vendors/nemid/img/oauthLogo.png'),
         ('transsped-prod-new', 'https://services.time4mind.com/res_ext/vendors/transsped/img/oauthLogo.png'),
     ])
 
@@ -656,8 +660,8 @@ class CSC(object):
                                                      ' / __/ __|/ __| | __/ _ \/ __| __/ _ \ \'__|',
                                                      '| (__\__ \ (__  | ||  __/\__ \ ||  __/ |   ',
                                                      ' \___|___/\___|  \__\___||___/\__\___|_|   ') \
-        + f'{CSC.highlight("Version:", bold=True)} {__version__}\n' \
-        + f'{CSC.highlight("Author:", bold=True)} {__author__}'
+            + f'{CSC.highlight("Version:", bold=True)} {__version__}\n' \
+            + f'{CSC.highlight("Author:", bold=True)} {__author__}'
 
     def _generic_test(self, cfg):
         tests = cfg['tests']
@@ -677,7 +681,7 @@ class CSC(object):
                     j = r.json()
                 except ValueError:
                     self.logger.error(f'[ {CSC.highlight("KO", "red", bold=True)} ] {cfg["service"]} {t["name"] if "name" in t else "test " + str(i + 1)}: cannot parse json response')
-                    return [] #TODO should not return??
+                    return []  # TODO should not return??
             check = t['exp_result']
 
             def _traverse_json(root, path):
@@ -761,13 +765,13 @@ class CSC(object):
             for c in check:
                 try:
                     if {
-                        'in':     _in_callback,
+                        'in': _in_callback,
                         'not in': _not_in_callback,
-                        'eq':     _equal_callback,
+                        'eq': _equal_callback,
                         'not eq': _not_equal_callback,
-                        '<':      _len_lesser_callback,
-                        '=':      _len_eq_callback,
-                        '>':      _len_greater_callback
+                        '<': _len_lesser_callback,
+                        '=': _len_eq_callback,
+                        '>': _len_greater_callback
                     }[c['condition']]():
                         self._print_KO_msg(cfg['service'], i + 1, t['input'], j, t['name'] if 'name' in t else None, error_level=2 if 'err_level' not in t else t['err_level'])
                         self.logger.error(f'{CSC.highlight(" Expected result rules:", bold=True)} {CSC.highlight(json.dumps(check, indent=4, sort_keys=True), "IndianRed1")}\n\n')
@@ -786,7 +790,7 @@ class CSC(object):
         j = r.json()
         self.logger.info(f'{json.dumps(j, indent=4, sort_keys=True)}')
         if 'logo' in j:
-            #check logo existence
+            # check logo existence
             rr = requests.get(j['logo'], allow_redirects=False)
             if rr is None:
                 self.logger.error(f'[ {CSC.highlight("KO", color="red", bold=True)} ] Logo test failed: {CSC.highlight("info response is empty", color="yellow")}')
@@ -831,18 +835,18 @@ class CSC(object):
         cfg = {
             'service': 'auth/login',
             'tests': [
-                { #1
+                {  # 1
                     'name': 'simple login',
-                    'headers': { 'Authorization' : 'Basic ' + self.credential_encoded },
+                    'headers': { 'Authorization': 'Basic ' + self.credential_encoded },
                     'input': None,
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'access_token' ] },
                         { 'condition': 'not in', 'arg': [ 'refresh_token', 'error' ] }
                     ]
                 },
-                { #2
+                {  # 2
                     'name': 'remember me login',
-                    'headers': { 'Authorization' : 'Basic ' + self.credential_encoded },
+                    'headers': { 'Authorization': 'Basic ' + self.credential_encoded },
                     'input': { 'rememberMe': True },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'access_token', 'refresh_token' ] },
@@ -855,7 +859,7 @@ class CSC(object):
         self.session_key = None
         self.refresh_token = None
         found = False
-        #save access_token/refresh_token and revoke the others
+        # save access_token/refresh_token and revoke the others
         for i in range(len(cfg['tests']) - 1, -1, -1):
             if not found and 'error' not in r[i] and 'access_token' in r[i]:
                 self.session_key = r[i]['access_token']
@@ -875,9 +879,9 @@ class CSC(object):
         cfg = {
             'service': 'credentials/list',
             'tests': [
-                { #1
+                {  # 1
                     'name': 'maxResults 1',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'maxResults': 1 },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'credentialIDs' ] },
@@ -885,9 +889,9 @@ class CSC(object):
                         { 'condition': '<', 'arg': { 'credentialIDs': 2 } }
                     ]
                 },
-                { #2
+                {  # 2
                     'name': 'maxResults 5',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'maxResults': 5 },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'credentialIDs' ] },
@@ -895,9 +899,9 @@ class CSC(object):
                         { 'condition': '<', 'arg': { 'credentialIDs': 6 } }
                     ]
                 },
-                { #3
+                {  # 3
                     'name': 'maxResults 20',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'maxResults': 20 },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'credentialIDs' ] },
@@ -907,10 +911,10 @@ class CSC(object):
                 }
             ]
         }
-        r = self._generic_test(cfg)
+        self._generic_test(cfg)
         self.credential_IDs = self.list_utility(64)
         if len(self.credential_IDs) > 1:
-            chunk_size = len(self.credential_IDs)//5 + 1
+            chunk_size = len(self.credential_IDs) // 5 + 1
             if len(self.list_utility(chunk_size, 5)) == len(self.credential_IDs):
                 self.logger.info(f'[ {CSC.highlight("OK", "green", bold=True)} ] credentials/list - pagination test')
             else:
@@ -943,7 +947,7 @@ class CSC(object):
             payload['pageToken'] = j['nextPageToken']
             iterations = iterations if iterations < 0 else iterations - 1
             sys.stdout.write("\r\033[K" if dots_num is 5 else ". ")
-            dots_num = (dots_num + 1)%6
+            dots_num = (dots_num + 1) % 6
             sys.stdout.flush()
         sys.stdout.write("\r\033[K")
         sys.stdout.flush()
@@ -956,9 +960,9 @@ class CSC(object):
         cfg = {
             'service': 'credentials/info',
             'tests': [
-                { #1
+                {  # 1
                     'name': 'credential_id only',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'cert>certificates', 'key>status', 'key>algo', 'key>len' ] },
@@ -967,9 +971,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'key>algo': [ "1.2.840.113549.1.1.1", "1.2.840.113549.1.1.5", "1.2.840.113549.1.1.14", "1.2.840.113549.1.1.11", "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13", "1.2.840.113549.1.1.10" ] } }
                     ]
                 },
-                { #2
+                {  # 2
                     'name': 'certificates none',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id, 'certificates': 'none' },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'cert', 'key>status', 'key>algo', 'key>len' ] },
@@ -977,9 +981,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'key>algo': [ "1.2.840.113549.1.1.1", "1.2.840.113549.1.1.5", "1.2.840.113549.1.1.14", "1.2.840.113549.1.1.11", "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13", "1.2.840.113549.1.1.10" ] } }
                     ]
                 },
-                { #3
+                {  # 3
                     'name': 'certificates single',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id, 'certificates': 'single' },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'cert>certificates', 'key>status', 'key>algo', 'key>len' ] },
@@ -988,9 +992,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'key>algo': [ "1.2.840.113549.1.1.1", "1.2.840.113549.1.1.5", "1.2.840.113549.1.1.14", "1.2.840.113549.1.1.11", "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13", "1.2.840.113549.1.1.10" ] } }
                     ]
                 },
-                { #4
+                {  # 4
                     'name': 'certificates chain',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id, 'certificates': 'chain' },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'cert>certificates', 'key>status', 'key>algo', 'key>len' ] },
@@ -999,9 +1003,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'key>algo': [ "1.2.840.113549.1.1.1", "1.2.840.113549.1.1.5", "1.2.840.113549.1.1.14", "1.2.840.113549.1.1.11", "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13", "1.2.840.113549.1.1.10" ] } }
                     ]
                 },
-                { #5
+                {  # 5
                     'name': 'certInfo',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id, 'certificates': 'single', 'certInfo': True },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'cert>certificates', 'cert>validFrom', 'cert>validTo', 'cert>subjectDN', 'cert>serialNumber', 'cert>issuerDN', 'key>status', 'key>algo', 'key>len' ] },
@@ -1010,9 +1014,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'key>algo': [ "1.2.840.113549.1.1.1", "1.2.840.113549.1.1.5", "1.2.840.113549.1.1.14", "1.2.840.113549.1.1.11", "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13", "1.2.840.113549.1.1.10" ] } }
                     ]
                 },
-                { #6
+                {  # 6
                     'name': 'no certInfo',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id, 'certificates': 'single' },
                     'exp_result': [
                         { 'condition': 'in', 'arg': [ 'cert>certificates', 'key>status', 'key>algo', 'key>len' ] },
@@ -1021,9 +1025,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'key>algo': [ "1.2.840.113549.1.1.1", "1.2.840.113549.1.1.5", "1.2.840.113549.1.1.14", "1.2.840.113549.1.1.11", "1.2.840.113549.1.1.12", "1.2.840.113549.1.1.13", "1.2.840.113549.1.1.10" ] } }
                     ]
                 },
-                { #7
+                {  # 7
                     'name': 'authInfo',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': { 'credentialID': credential_id, 'certificates': 'chain', 'authInfo': True },
                     'exp_result': [
                         { 'condition': 'in' if auth_mode == 'explicit' else 'not in', 'arg': [ 'PIN', 'OTP' ] },
@@ -1063,7 +1067,7 @@ class CSC(object):
                 otp_type = j['OTP']['type']
         if 'authMode' in j:
             auth_mode = j['authMode']
-        is_valid =  'cert' in j and 'status' in j['cert'] and j['cert']['status'] == 'valid' and 'key' in j and 'status' in j['key'] and j['key']['status'] == 'enabled'
+        is_valid = 'cert' in j and 'status' in j['cert'] and j['cert']['status'] == 'valid' and 'key' in j and 'status' in j['key'] and j['key']['status'] == 'enabled'
 
         key_algo = None
         if 'key' in j and 'algo' in j['key']:
@@ -1084,8 +1088,8 @@ class CSC(object):
             'name': 'default',
             'service': 'credentials/sendOTP',
             'tests': [
-                { #1
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                {  # 1
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'credentialID': credential_id
                     },
@@ -1117,7 +1121,6 @@ class CSC(object):
             self._set_error_level(3)
             self.logger.error(f'{CSC.highlight("An error occurred while sending an OTP for credential {credential_id}", "red", bold=True)} - {type(e).__name__} {e}')
         self.single_revoke(noout=True)
-
 
     def authorize_test(self, credential_id=None, auth_mode='explicit', pin_presence=True, otp_presence=True, otp_type='online', num_signatures=20, is_valid=True):
         if self.session_key is None:
@@ -1156,9 +1159,9 @@ class CSC(object):
         cfg = {
             'service': 'credentials/authorize',
             'tests': [
-                { #2 - wrong PIN
+                {  # 2 - wrong PIN
                     'name': 'wrong PIN',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'credentialID': credential_id,
                         'numSignatures': num_signatures,
@@ -1171,9 +1174,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'error': wrong_pin_test_error, 'error_description': wrong_pin_test_error_description } },
                     ]
                 },
-                { #3
+                {  # 3
                     'name': f'valid authorize request for {num_signatures} signatures',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'err_level': 3,
                     'input': {
                         'credentialID': credential_id,
@@ -1186,9 +1189,9 @@ class CSC(object):
                         { 'condition': 'not in' if is_valid else 'in', 'arg': [ 'error' ] }
                     ]
                 },
-                { #4
+                {  # 4
                     'name': 'invalid PIN format',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'credentialID': credential_id,
                         'numSignatures': num_signatures,
@@ -1201,9 +1204,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'error': 'invalid_request', 'error_description': 'Invalid parameter PIN' } },
                     ]
                 },
-                { #5
+                {  # 5
                     'name': 'invalid OTP format',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'credentialID': credential_id,
                         'numSignatures': num_signatures,
@@ -1224,9 +1227,9 @@ class CSC(object):
                 for i in cfg['tests']:
                     if 'OTP' in i['input'] and i['input']['OTP'] is None:
                         i['input']['OTP'] = otp
-                tmp = { #1 - wrong OTP
+                tmp = {  # 1 - wrong OTP
                     'name': 'wrong OTP',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'OTP': '>>0',
                         'credentialID': credential_id,
@@ -1276,9 +1279,9 @@ class CSC(object):
         cfg = {
             'service': 'credentials/extendTransaction',
             'tests': [
-                { #1 - wrong SAD
+                {  # 1 - wrong SAD
                     'name': 'wrong SAD',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'SAD': 'xxx',
                         'credentialID': credential_id
@@ -1288,9 +1291,9 @@ class CSC(object):
                         { 'condition': 'eq', 'arg': { 'error': 'invalid_request', 'error_description': 'Invalid parameter SAD' } }
                     ]
                 },
-                { #2
+                {  # 2
                     'name': 'valid request',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'err_level': 3,
                     'input': {
                         'SAD': sad,
@@ -1327,9 +1330,9 @@ class CSC(object):
             { 'condition': 'not in', 'arg': [ 'error' ] }
         ]
         invalid_digest_length_req = {
-            #Erroneous request - invalid digest value length
+            # Erroneous request - invalid digest value length
             'name': 'Invalid digest length',
-            'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+            'headers': { 'Authorization': 'Bearer ' + self.session_key },
             'input': {
                 'SAD': sad,
                 'hash': [
@@ -1349,7 +1352,7 @@ class CSC(object):
             r = copy.deepcopy(result_success)
             r.append({ 'condition': '=', 'arg': { 'signatures': 4 } })
             base_request = {
-                'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'headers': { 'Authorization': 'Bearer ' + self.session_key },
                 'err_level': 3,
                 'input': {
                     'SAD': sad,
@@ -1374,7 +1377,7 @@ class CSC(object):
             cfg['tests'].append(tmp)
 
             if not invalid_digest_length_performed:
-                #Invalid digest value length
+                # Invalid digest value length
                 invalid_digest_length_req['input']['signAlgo'] = CSC.ALGO_SHA1_WITH_RSA_ENC
                 cfg['tests'].append(invalid_digest_length_req)
                 invalid_digest_length_performed = True
@@ -1384,7 +1387,7 @@ class CSC(object):
             r.append({ 'condition': '=', 'arg': { 'signatures': 1 } })
             cfg['tests'].append({
                 'name': 'sha224 with signAlgo',
-                'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'headers': { 'Authorization': 'Bearer ' + self.session_key },
                 'err_level': 3,
                 'input': {
                     'SAD': sad,
@@ -1395,7 +1398,7 @@ class CSC(object):
                 'exp_result': r
             })
             if not invalid_digest_length_performed:
-                #Invalid digest value length
+                # Invalid digest value length
                 invalid_digest_length_req['input']['signAlgo'] = CSC.ALGO_SHA224_WITH_RSA_ENC
                 cfg['tests'].append(invalid_digest_length_req)
                 invalid_digest_length_performed = True
@@ -1405,7 +1408,7 @@ class CSC(object):
             r.append({ 'condition': '=', 'arg': { 'signatures': 1 } })
             cfg['tests'].append({
                 'name': 'sha256 with signAlgo',
-                'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'headers': { 'Authorization': 'Bearer ' + self.session_key },
                 'err_level': 3,
                 'input': {
                     'SAD': sad,
@@ -1416,7 +1419,7 @@ class CSC(object):
                 'exp_result': r
             })
             if not invalid_digest_length_performed:
-                #Invalid digest value length
+                # Invalid digest value length
                 invalid_digest_length_req['input']['signAlgo'] = CSC.ALGO_SHA256_WITH_RSA_ENC
                 cfg['tests'].append(invalid_digest_length_req)
                 invalid_digest_length_performed = True
@@ -1426,7 +1429,7 @@ class CSC(object):
             r.append({ 'condition': '=', 'arg': { 'signatures': 3 } })
             cfg['tests'].append({
                 'name': 'sha384 with signAlgo',
-                'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'headers': { 'Authorization': 'Bearer ' + self.session_key },
                 'err_level': 3,
                 'input': {
                     'SAD': sad,
@@ -1441,7 +1444,7 @@ class CSC(object):
                 'exp_result': r
             })
             if not invalid_digest_length_performed:
-                #Invalid digest value length
+                # Invalid digest value length
                 invalid_digest_length_req['input']['signAlgo'] = CSC.ALGO_SHA384_WITH_RSA_ENC
                 cfg['tests'].append(invalid_digest_length_req)
                 invalid_digest_length_performed = True
@@ -1451,7 +1454,7 @@ class CSC(object):
             r.append({ 'condition': '=', 'arg': { 'signatures': 1 } })
             cfg['tests'].append({
                 'name': 'sha512 with signAlgo',
-                'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'headers': { 'Authorization': 'Bearer ' + self.session_key },
                 'err_level': 3,
                 'input': {
                     'SAD': sad,
@@ -1462,7 +1465,7 @@ class CSC(object):
                 'exp_result': r
             })
             if not invalid_digest_length_performed:
-                #Invalid digest value length
+                # Invalid digest value length
                 invalid_digest_length_req['input']['signAlgo'] = CSC.ALGO_SHA512_WITH_RSA_ENC
                 cfg['tests'].append(invalid_digest_length_req)
                 invalid_digest_length_performed = True
@@ -1472,7 +1475,7 @@ class CSC(object):
             r.append({ 'condition': '=', 'arg': { 'signatures': 3 } })
             cfg['tests'].append({
                 'name': 'RSASSA-PSS with signAlgo',
-                'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                'headers': { 'Authorization': 'Bearer ' + self.session_key },
                 'err_level': 3,
                 'input': {
                     'SAD': sad,
@@ -1488,7 +1491,7 @@ class CSC(object):
                 'exp_result': r
             })
             if not invalid_digest_length_performed:
-                #Invalid digest value length
+                # Invalid digest value length
                 invalid_digest_length_req['input']['signAlgo'] = CSC.ALGO_RSASSA_PSS
                 cfg['tests'].append(invalid_digest_length_req)
                 invalid_digest_length_performed = True
@@ -1504,9 +1507,9 @@ class CSC(object):
         cfg = {
             'service': 'signatures/timestamp',
             'tests': [
-                { #1
+                {  # 1
                     'name': 'without nonce',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'hash': 'uB28DAYaAZ+74aWHm30uDgeVB18=',
                         'hashAlgo': '1.3.14.3.2.26'
@@ -1516,10 +1519,9 @@ class CSC(object):
                         { 'condition': 'not in', 'arg': [ 'error' ] }
                     ]
                 },
-                { #2
+                {  # 2
                     'name': 'with nonce',
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
-                    'headers': { 'Authorization' : 'Bearer ' + self.session_key },
+                    'headers': { 'Authorization': 'Bearer ' + self.session_key },
                     'input': {
                         'hash': 'uB28DAYaAZ+74aWHm30uDgeVB18=',
                         'hashAlgo': '1.3.14.3.2.26',
@@ -1538,7 +1540,7 @@ class CSC(object):
         cfg = {
             'service': 'unsupported/service',
             'tests': [
-                { #1
+                {  # 1
                     'input': {
                         'key': 'value'
                     },
@@ -1551,7 +1553,7 @@ class CSC(object):
         self._generic_test(cfg)
 
     def revoke(self, s):
-        #REVOKE Test 1
+        # REVOKE Test 1
         payload = {
             'token': s
         }
@@ -1567,7 +1569,7 @@ class CSC(object):
             self._print_OK_msg('auth/revoke', 1)
         else:
             self._print_KO_msg('Revoke', 1, payload, j)
-        #REVOKE Test 2
+        # REVOKE Test 2
         if self.credential_encoded is not None:
             payload = {
                 'rememberMe': True
@@ -1599,7 +1601,7 @@ class CSC(object):
             else:
                 self._set_error_level(2)
                 self.logger.error(CSC.highlight('*** Unable to perfom revoke test 2: login failed', 'red'))
-        #REVOKE Test 3
+        # REVOKE Test 3
         if self.credential_encoded is not None:
             payload = {
                 'rememberMe': True
@@ -1633,7 +1635,7 @@ class CSC(object):
             else:
                 self._set_error_level(2)
                 self.logger.error(CSC.highlight('*** Unable to perfom revoke test 3: login failed', 'red'))
-        #REVOKE Test 4
+        # REVOKE Test 4
         if self.credential_encoded is not None:
             r = requests.get(self.service_URLs['auth/login'], verify=False, headers={'Authorization': 'Basic ' + self.credential_encoded})
             j = r.json()
@@ -1701,21 +1703,21 @@ class CSC(object):
             attr.append('0')
         try:
             color = {
-                'black':  '90',
-                'red':    '91',
-                'green':  '92',
+                'black': '90',
+                'red': '91',
+                'green': '92',
                 'yellow': '93',
-                'blue':   '94',
+                'blue': '94',
                 'purple': '95',
-                'cyan':   '96',
-                'white':  '97',
-                'DeepPink1':    [ '38', '5', '198' ],
+                'cyan': '96',
+                'white': '97',
+                'DeepPink1': [ '38', '5', '198' ],
                 'DeepSkyBlue2': [ '38', '5', '38'  ],
-                'IndianRed1':   [ '38', '5', '203' ],
-                'SeaGreen2':    [ '38', '5', '83'  ]
+                'IndianRed1': [ '38', '5', '203' ],
+                'SeaGreen2': [ '38', '5', '83'  ]
             }[color]
         except KeyError:
-            #default to white
+            # default to white
             color = '97'
         if isinstance(color, str):
             attr.append(color)
@@ -1725,7 +1727,7 @@ class CSC(object):
 
     def _sig_handler(self, signal, frame):
         signame = {
-            2:  'SIGINT',
+            2: 'SIGINT',
             15: 'SIGTERM'
         }[signal]
         print(CSC.highlight('\n*** ' + signame + ' detected ***', 'yellow', bold=True), file=sys.stderr)
@@ -1887,8 +1889,8 @@ class CSC(object):
         p = re.compile("^.+\.([^.]+)$")
         content_types = {
             "jpeg": "image/jpeg",
-            "jpg":  "image/jpeg",
-            "png":  "image/png"
+            "jpg": "image/jpeg",
+            "png": "image/png"
         }
         try:
             m = p.search(url)
@@ -1934,14 +1936,10 @@ class CSC(object):
             self.error_level = value
 
     def get_error_level(self):
-        self.logger.info(f'DEBUG - exit value {self.error_level}') # TODO remove
+        self.logger.info(f'DEBUG - exit value {self.error_level}')  # TODO remove
         return self.error_level
 
     def __init__(self, user=None, passw='password', pin='12345678', env=None, context=None, session_key=None, quiet=False, logger=None, noout=False):
-        #ctx = ssl.create_default_context()
-        #ctx.check_hostname = False
-        #ctx.verify_mode = ssl.CERT_NONE
-
         self.logger = logger if logger else get_logger()
 
         if not env and not context:
@@ -1952,19 +1950,19 @@ class CSC(object):
             context = CSC.env_URLs[env]
 
         self.service_URLs = {
-            'info':                          context + '/info',
-            'auth/login':                    context + '/auth/login',
-            'auth/revoke':                   context + '/auth/revoke',
-            'credentials/list':              context + '/credentials/list',
-            'credentials/info':              context + '/credentials/info',
-            'credentials/sendOTP':           context + '/credentials/sendOTP',
-            'credentials/authorize':         context + '/credentials/authorize',
+            'info': context + '/info',
+            'auth/login': context + '/auth/login',
+            'auth/revoke': context + '/auth/revoke',
+            'credentials/list': context + '/credentials/list',
+            'credentials/info': context + '/credentials/info',
+            'credentials/sendOTP': context + '/credentials/sendOTP',
+            'credentials/authorize': context + '/credentials/authorize',
             'credentials/extendTransaction': context + '/credentials/extendTransaction',
-            'signatures/signHash':           context + '/signatures/signHash',
-            'signatures/timestamp':          context + '/signatures/timestamp',
-            'oauth2/authorize':              context + '/oauth2/authorize',
-            'oauth2/token':                  context + '/oauth2/token',
-            'unsupported/service':           context + '/unsupported/service'
+            'signatures/signHash': context + '/signatures/signHash',
+            'signatures/timestamp': context + '/signatures/timestamp',
+            'oauth2/authorize': context + '/oauth2/authorize',
+            'oauth2/token': context + '/oauth2/token',
+            'unsupported/service': context + '/unsupported/service'
         }
 
         self.test_credentials = True
@@ -1989,15 +1987,16 @@ class CSC(object):
                 self.logger.debug(f'{CSC.highlight("Using authorization header:", bold=True)} {self.credential_encoded}')
             self.logger.debug('\n###\n')
 
-            signal.signal(signal.SIGINT,  self._sig_handler)
+            signal.signal(signal.SIGINT, self._sig_handler)
             signal.signal(signal.SIGTERM, self._sig_handler)
 
         if 'https' in context:
             try:
                 requests.packages.urllib3.disable_warnings()
-            except:
+            except Exception:
                 self.logger.info(CSC.highlight('Unable to disable urlib3 warnings', 'yellow'))
                 self.logger.info(CSC.highlight('Update \'requests` module or execute `export PYTHONWARNINGS="ignore:Unverified HTTPS request"` to suppress HTTPS warnings', 'yellow'))
+
 
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
@@ -2005,10 +2004,12 @@ def print_version(ctx, param, value):
     click.echo(CSC.getinfostr())
     ctx.exit(0)
 
+
 def validate_session(ctx, param, value):
     if value and ctx.params['environment'] is None:
         raise click.BadParameter(f'Cannot use session [{value}], missing environment value')
     return value
+
 
 def initialize_with_TUI(quiet, logger, noout=False):
     m = CSCCursesMenu(CSCCursesMenu.DEFAULT_CREDENTIALS_FILE_NAME)
@@ -2031,14 +2032,15 @@ def initialize_with_TUI(quiet, logger, noout=False):
 
     return CSC(data['username'], data['password'], context=data['ctx_path'], session_key=data['session_key'], quiet=quiet, logger=logger, noout=noout)
 
+
 @click.group(context_settings=dict(help_option_names=['-h', '--help']), invoke_without_command=True)
-@click.option('--user',        '-u', metavar='<username>', help='Account username to be used.')
-@click.option('--passw',       '-p', metavar='<password>', help='Account password to be used.')
+@click.option('--user', '-u', metavar='<username>', help='Account username to be used.')
+@click.option('--passw', '-p', metavar='<password>', help='Account password to be used.')
 @click.option('--environment', '-e', metavar='<env>', is_eager=True, type=click.Choice(CSC.env_URLs.keys()), help='Target environment. Use the list command to view the supported environments.')
-@click.option('--session',     '-s', metavar='<session-key>', callback=validate_session, help='A valid CSC access token. If provided, no authentication using username/password will be performed.')
-@click.option('--quiet',       '-q', is_flag=True, default=False, help='Non-interactive mode: every test requiring a user interaction will be skipped. Only automatic credentials (PIN only) will be checked using the default PIN. WARNING the default PIN is 12345678.')
-@click.option('--log',         '-l', type=click.Path(exists=False, resolve_path=True), metavar='<path-to-log-file>', help='Log file path. If present, the output will be written to this file. If not, no log file will be created and STDOUT will be used.')
-@click.option('--version',     '-V', is_flag=True, expose_value=False, callback=print_version, is_eager=True, help='Print version information and exit.')
+@click.option('--session', '-s', metavar='<session-key>', callback=validate_session, help='A valid CSC access token. If provided, no authentication using username/password will be performed.')
+@click.option('--quiet', '-q', is_flag=True, default=False, help='Non-interactive mode: every test requiring a user interaction will be skipped. Only automatic credentials (PIN only) will be checked using the default PIN. WARNING the default PIN is 12345678.')
+@click.option('--log', '-l', type=click.Path(exists=False, resolve_path=True), metavar='<path-to-log-file>', help='Log file path. If present, the output will be written to this file. If not, no log file will be created and STDOUT will be used.')
+@click.option('--version', '-V', is_flag=True, expose_value=False, callback=print_version, is_eager=True, help='Print version information and exit.')
 @click.pass_context
 def main(ctx, quiet, user, passw, environment, session, log):
 
@@ -2080,18 +2082,21 @@ def main(ctx, quiet, user, passw, environment, session, log):
     ctx.obj['session'] = session
     ctx.obj['user'] = user
 
+
 @main.command('list')
 def list_environments():
     """List the available environments and exit"""
-    align_len = max([ len(CSC.highlight(c, "DeepSkyBlue2")) for c in CSC.env_URLs.keys() ]) + 1 # dinamically get the alignment size
+    align_len = max([ len(CSC.highlight(c, "DeepSkyBlue2")) for c in CSC.env_URLs.keys() ]) + 1  # dinamically get the alignment size
     print(*[ f'{CSC.highlight(c, "DeepSkyBlue2"):>{align_len}} \u2192  {CSC.env_URLs[c]}' for c in sorted(CSC.env_URLs.keys()) ], sep='\n')
     sys.exit(0)
+
 
 @main.command()
 @click.pass_context
 def logo(ctx):
     """Check logo files and exit"""
     sys.exit(CSC.check_logos(ctx.obj['logger']))
+
 
 @main.command(short_help='Scan the user credentials: no signature test will be performed, only the credential details will be shown.')
 @click.pass_context
@@ -2102,6 +2107,7 @@ def scan(ctx):
         csc = CSC(ctx.obj['user'], ctx.obj['password'], env=ctx.obj['environment'], session_key=ctx.obj['session'], quiet=ctx.obj['quiet'], logger=ctx.obj['logger'])
     csc.scan()
     sys.exit(csc.get_error_level())
+
 
 @main.command(short_help='Check credential ID(s) provided: if no credential ID is provided then check every credential found in the account and perform other non credential-related checks')
 @click.argument('credential_id', nargs=-1)
@@ -2118,6 +2124,7 @@ def check(ctx, credential_id):
         csc.global_test()
     sys.exit(csc.get_error_level())
 
+
 @main.command()
 @click.argument('credential_id', nargs=1)
 @click.pass_context
@@ -2130,6 +2137,6 @@ def otp(ctx, credential_id):
     csc.send_otp(credential_id)
     sys.exit(csc.get_error_level())
 
+
 if __name__ == "__main__":
     main()
-
